@@ -60,6 +60,11 @@ const schema = z
     OTP_RESEND_COOLDOWN_SECONDS: z.coerce.number().int().nonnegative().default(60),
     OTP_MAX_PER_HOUR: z.coerce.number().int().positive().default(6),
 
+    // Password reset links and listing lifetime.
+    PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().positive().default(30),
+    ITEM_EXPIRY_DAYS: z.coerce.number().int().positive().default(60),
+    ITEM_EXPIRY_WARN_DAYS: z.coerce.number().int().nonnegative().default(7),
+
     MAIL_TRANSPORT: z.enum(['smtp', 'file', 'capture']).default('file'),
     MAIL_FROM: z.string().default('CampusConnect <no-reply@campusconnect.local>'),
     MAIL_OUTBOX_DIR: z.string().default('tmp/mail-outbox'),
@@ -167,6 +172,7 @@ function buildConfig(source = process.env) {
           : Number(v.TRUST_PROXY),
     sessionTtlMs: sessionHours * 3600 * 1000,
     otpTtlMs: v.OTP_TTL_MINUTES * 60 * 1000,
+    resetTtlMs: v.PASSWORD_RESET_TTL_MINUTES * 60 * 1000,
   };
 }
 

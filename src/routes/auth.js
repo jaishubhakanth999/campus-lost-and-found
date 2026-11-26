@@ -83,6 +83,35 @@ router.post(
   })
 );
 
+/** Start a password reset. Always answers the same way. */
+router.post(
+  '/forgot-password',
+  L.otp,
+  validate({ body: v.forgotPassword }),
+  asyncHandler(async (req, res) => {
+    const result = await authService.requestPasswordReset({
+      email: req.validated.body.email,
+      ...clientMeta(req),
+    });
+    res.json(result);
+  })
+);
+
+/** Finish a password reset. Signs every session out. */
+router.post(
+  '/reset-password',
+  L.otp,
+  validate({ body: v.resetPassword }),
+  asyncHandler(async (req, res) => {
+    const result = await authService.resetPassword({
+      token: req.validated.body.token,
+      password: req.validated.body.password,
+      ...clientMeta(req),
+    });
+    res.json(result);
+  })
+);
+
 router.post(
   '/logout',
   authenticate,

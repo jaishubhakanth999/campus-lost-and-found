@@ -157,6 +157,7 @@ function scriptsFor(file) {
     'report.html': ['assets/report.js'],
     'item.html': ['assets/item.js'],
     'dashboard.html': ['assets/dashboard.js'],
+    'reset.html': ['assets/reset.js'],
     'admin/index.html': ['assets/admin.js'],
   };
   return map[file] || [];
@@ -173,6 +174,7 @@ test('every page loads, runs its scripts and renders without errors', async () =
     ['report.html', 'student', '#reportForm', '#title'],
     ['item.html', 'student', '#itemRoot', '#itemRoot h1', '?id=' + ITEM.id],
     ['dashboard.html', 'student', '#panel', '.row-card'],
+    ['reset.html', null, '#panelRequest', '#requestForm'],
     ['admin/index.html', 'admin', '#consoleScreen', '.metric'],
   ];
 
@@ -355,6 +357,67 @@ test('the dashboard profile form saves through PATCH /api/auth/me', async () => 
   const body = JSON.parse(call.body);
   assert.equal(body.name, 'Asha R Rao');
   assert.equal(body.department, 'Computer Science');
+});
+
+test('the reset page requests a link, then sets a new password from the token', async () => {
+  const token = 'a'.repeat(64);
+  const { window, calls } = loadPage('reset.html', {
+    search: '?token=' + token,
+    table: {
+      '/api/auth/reset-password': { ok: true, sessionsRevoked: 2 },
+    },
+  });
+  await tick();
+
+  // With a token in the URL the page opens on the "choose a password" step.
+  assert.equal(window.document.getElementById('panelReset').hidden, false);
+  assert.equal(window.document.getElementById('panelRequest').hidden, true);
+
+  const form = window.document.getElementById('resetForm');
+  form.elements.password.value = 'FreshStart123';
+  form.elements.confirm.value = 'FreshStart123';
+  form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+
+  const call = calls.find((c) => c.url === '/api/auth/reset-password');
+  assert.ok(call, 'the reset endpoint was called');
+  const body = JSON.parse(call.body);
+  assert.equal(body.token, token, 'the token from the URL is sent');
+  assert.equal(body.password, 'FreshStart123');
+  assert.equal(window.document.getElementById('panelDone').hidden, false);
+  assert.match(window.document.getElementById('doneMessage').textContent, /2 other session/);
+});
+
+test('the reset page refuses mismatched passwords before calling the API', async () => {
+  const { window, calls } = loadPage('reset.html', { search: '?token=' + 'b'.repeat(64) });
+  await tick();
+
+  const form = window.document.getElementById('resetForm');
+  form.elements.password.value = 'FreshStart123';
+  form.elements.confirm.value = 'Different123';
+  form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+
+  assert.equal(window.document.getElementById('resetAlert').hidden, false);
+  assert.match(window.document.getElementById('resetAlert').textContent, /do not match/i);
+  assert.equal(calls.filter((c) => c.url === '/api/auth/reset-password').length, 0);
+});
+
+test('the reset page requests a link when there is no token', async () => {
+  const { window, calls } = loadPage('reset.html', {
+    table: { '/api/auth/forgot-password': { ok: true, message: 'If that address belongs to an account, a reset link is on its way.' } },
+  });
+  await tick();
+
+  const form = window.document.getElementById('requestForm');
+  form.elements.email.value = 'asha@saiuniversity.edu.in';
+  form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+
+  const call = calls.find((c) => c.url === '/api/auth/forgot-password');
+  assert.ok(call);
+  assert.equal(JSON.parse(call.body).email, 'asha@saiuniversity.edu.in');
+  assert.equal(window.document.getElementById('requestInfo').hidden, false);
 });
 
 test('the admin console blocks a student and never renders admin data', async () => {

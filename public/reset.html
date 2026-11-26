@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Reset password | CampusConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">C</span><span>Campus<span class="brand-accent">Connect</span></span></a>
+      <nav class="nav-links" data-nav-links aria-label="Main"></nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap" style="max-width:520px;padding:2.5rem 0 3rem;">
+    <div class="card">
+      <!-- Step 1: ask for a link -->
+      <section id="panelRequest">
+        <h1 style="font-size:1.7rem;">Forgot your password?</h1>
+        <p class="muted">Enter your university email and we will send a reset link. The link works once and expires in 30 minutes.</p>
+        <div class="form-alert error" id="requestAlert" hidden></div>
+        <div class="form-alert success" id="requestInfo" hidden></div>
+        <form id="requestForm" novalidate>
+          <div class="field">
+            <label for="email">University email</label>
+            <input id="email" name="email" type="email" autocomplete="username" required placeholder="you@saiuniversity.edu.in">
+          </div>
+          <button class="btn btn-primary btn-full btn-lg" type="submit" id="requestSubmit">Send reset link</button>
+        </form>
+        <p class="muted" style="margin-top:1rem;font-size:.9rem;">
+          Remembered it? <a href="auth.html">Back to sign in</a>
+        </p>
+      </section>
+
+      <!-- Step 2: choose a new password -->
+      <section id="panelReset" hidden>
+        <h1 style="font-size:1.7rem;">Choose a new password</h1>
+        <p class="muted">This will sign you out everywhere else, including any device you no longer use.</p>
+        <div class="form-alert error" id="resetAlert" hidden></div>
+        <form id="resetForm" novalidate>
+          <div class="field">
+            <label for="password">New password</label>
+            <input id="password" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+            <span class="hint">At least 8 characters, including a letter and a number.</span>
+          </div>
+          <div class="field">
+            <label for="confirm">Confirm new password</label>
+            <input id="confirm" name="confirm" type="password" autocomplete="new-password" required placeholder="Repeat the password">
+          </div>
+          <button class="btn btn-primary btn-full btn-lg" type="submit" id="resetSubmit">Set new password</button>
+        </form>
+      </section>
+
+      <!-- Step 3: done -->
+      <section id="panelDone" hidden>
+        <h1 style="font-size:1.7rem;">Password updated</h1>
+        <p class="muted" id="doneMessage">You can now sign in with your new password.</p>
+        <a class="btn btn-primary btn-lg" href="auth.html">Sign in</a>
+      </section>
+    </div>
+  </main>
+
+  <script src="assets/config.js"></script>
+  <script src="assets/api.js"></script>
+  <script src="assets/reset.js"></script>
+</body>
+</html>

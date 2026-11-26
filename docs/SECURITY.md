@@ -41,6 +41,19 @@ Written to be read by whoever runs this platform, not just by developers.
 > with a server-side pepper means a stolen database dump alone is useless, while
 > online guessing is stopped by the attempt limit and the 5-minute window.
 
+## 2b. Password reset
+
+| Control | Implementation |
+|---|---|
+| Token | 32 random bytes, hex encoded, sent once by email |
+| Storage | HMAC-SHA256 with `OTP_PEPPER`; the plain token is never stored |
+| Lifetime | 30 minutes (`PASSWORD_RESET_TTL_MINUTES`) |
+| Single use | Burned with a conditional `update … where used_at is null` |
+| Supersede | Requesting a new link marks the previous one used (partial unique index) |
+| Enumeration | The endpoint answers identically for known and unknown addresses, and no email is sent for unknown ones |
+| Session impact | Every session for the account is revoked on a successful reset |
+| Audit | `password_reset_requested` and `password_reset_completed` land in `auth_events` |
+
 ## 3. Sessions
 
 - A JWT carries `sub` (user), `sid` (session) and `role`, signed HS256 with an
@@ -149,8 +162,6 @@ Say these out loud before a pilot rather than discovering them later:
 
 - **No 2FA for students** — the OTP *is* the second factor for a password login.
   Administrators would benefit from a TOTP app in a later phase.
-- **No password reset flow yet.** Support path: an administrator sets a new
-  password. Add a token-based reset before scaling beyond a pilot.
 - **No CAPTCHA.** Rate limits and email verification cover the realistic abuse for
   a campus; revisit if you see automated signups.
 - **No WAF/DDoS protection** beyond what your host provides.

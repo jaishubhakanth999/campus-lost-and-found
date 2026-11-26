@@ -191,6 +191,39 @@ function itemReturnedEmail({ name, itemTitle, itemUrl }) {
   };
 }
 
+function passwordResetEmail({ name, url, minutes }) {
+  return {
+    subject: 'Reset your CampusConnect password',
+    html: layout({
+      preheader: `Your reset link expires in ${minutes} minutes.`,
+      heading: 'Reset your password',
+      body:
+        p(`Hi ${escapeHtml(name || 'there')}, we received a request to reset the password for your CampusConnect account.`) +
+        p(`The link below works once and expires in <strong>${minutes} minutes</strong>.`) +
+        `<table role="presentation" width="100%" style="margin:0 0 18px;"><tr><td style="background:${C.cream};border:1px dashed ${C.green};border-radius:12px;padding:14px 16px;font-size:13px;word-break:break-all;color:${C.greenDark};">${escapeHtml(url)}</td></tr></table>` +
+        p('If you did not ask for this, ignore the email — your password stays exactly as it is. Nobody can use this link without opening it from your inbox.'),
+      cta: { label: 'Choose a new password', url },
+      footerNote: 'For your security, this link stops working once it has been used or after it expires.',
+    }),
+    text: `Reset your CampusConnect password (expires in ${minutes} minutes): ${url}`,
+  };
+}
+
+function listingExpiringEmail({ name, itemTitle, daysLeft, itemUrl }) {
+  return {
+    subject: `“${itemTitle}” closes in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`,
+    html: layout({
+      preheader: 'Still looking? Re-post it in one click.',
+      heading: 'Your listing is about to close',
+      body:
+        p(`Hi ${escapeHtml(name || 'there')}, your ${daysLeft === 1 ? 'listing closes tomorrow' : `listing closes in ${daysLeft} days`}: <strong>${escapeHtml(itemTitle)}</strong>.`) +
+        p('If you have already found it, open the listing and mark it returned so the gallery stays accurate. If you are still looking, re-post it — a fresh listing is seen by everyone again.'),
+      cta: { label: 'Open the listing', url: itemUrl },
+    }),
+    text: `"${itemTitle}" closes in ${daysLeft} days.`,
+  };
+}
+
 function securityAlertEmail({ name, event, when, ip }) {
   return {
     subject: 'Security notice for your CampusConnect account',
@@ -209,6 +242,8 @@ function securityAlertEmail({ name, event, when, ip }) {
 
 module.exports = {
   otpEmail,
+  passwordResetEmail,
+  listingExpiringEmail,
   welcomeEmail,
   claimReceivedEmail,
   claimDecisionEmail,

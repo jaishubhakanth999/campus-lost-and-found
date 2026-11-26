@@ -638,6 +638,132 @@ async function resendOtp({ email, purpose, ip = null }) {
   return issueOtp({ user, purpose: effectivePurpose, ip });
 }
 
+/* ------------------------------ password reset ----------------------------- */
+
+/**
+ * Starts a password reset.
+ *
+ * The response is always the same, so this endpoint cannot be used to discover
+ * which addresses are registered. A live link is invalidated when a new one is
+ * requested, only a hash is stored, and the token is single-use with a short
+ * lifetime.
+ */
+async function requestPasswordReset({ email, ip = null, userAgent = null }) {
+  const cfg = getConfig();
+  const normalized = normalizeEmail(email);
+  const generic = {
+    ok: true,
+    message: 'If that address belongs to an account, a reset link is on its way.',
+    expiresInSeconds: cfg.PASSWORD_RESET_TTL_MINUTES * 60,
+  };
+
+  const user = await findUserByEmail(normalized);
+  if (!user || user.status !== 'active') {
+    await recordAuthEvent({
+      email: normalized,
+      event: 'password_reset_requested',
+      outcome: 'failure',
+      reason: user ? `account ${user.status}` : 'no such account',
+      ip,
+      userAgent,
+    });
+    return generic;
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = hashCode(token, 'password_reset');
+  const expiresAt = new Date(Date.now() + cfg.resetTtlMs);
+
+  await withTransaction(async (client) => {
+    await client.query(
+      `update password_reset_tokens set used_at = now()
+        where user_id = $1 and used_at is null`,
+      [user.id]
+    );
+    await client.query(
+      `insert into password_reset_tokens (user_id, token_hash, expires_at, request_ip)
+       values ($1, $2, $3, $4)`,
+      [user.id, tokenHash, expiresAt, ip]
+    );
+  });
+
+  const url = `${getConfig().APP_URL.replace(/\/+$/, '')}/reset.html?token=${token}`;
+  const sent = await mailer.send({
+    to: user.email,
+    ...templates.passwordResetEmail({
+      name: user.name,
+      url,
+      minutes: cfg.PASSWORD_RESET_TTL_MINUTES,
+    }),
+  });
+
+  await recordAuthEvent({
+    userId: user.id,
+    email: user.email,
+    event: 'password_reset_requested',
+    outcome: sent.ok ? 'success' : 'failure',
+    reason: sent.ok ? null : 'mail delivery failed',
+    ip,
+    userAgent,
+  });
+
+  return generic;
+}
+
+/** Completes a reset. Single use, expiring, and it signs every session out. */
+async function resetPassword({ token, password, ip = null, userAgent = null }) {
+  assertPassword(password);
+  const tokenHash = hashCode(String(token).trim(), 'password_reset');
+
+  const { rows } = await query(
+    `select id, user_id, expires_at, used_at
+       from password_reset_tokens
+      where token_hash = $1
+      limit 1`,
+    [tokenHash]
+  );
+  const record = rows[0];
+  if (!record || record.used_at) {
+    throw badRequest('That reset link is invalid or has already been used. Request a new one.');
+  }
+  if (new Date(record.expires_at) <= new Date()) {
+    await query(`update password_reset_tokens set used_at = now() where id = $1`, [record.id]);
+    throw badRequest('That reset link has expired. Request a new one.');
+  }
+
+  const passwordHash = await bcrypt.hash(password, bcryptRounds());
+
+  await withTransaction(async (client) => {
+    // Burn the link conditionally so two submissions cannot both succeed.
+    const burned = await client.query(
+      `update password_reset_tokens set used_at = now()
+        where id = $1 and used_at is null
+        returning id`,
+      [record.id]
+    );
+    if (!burned.rowCount) {
+      throw badRequest('That reset link is invalid or has already been used. Request a new one.');
+    }
+    await client.query(`update users set password_hash = $2 where id = $1`, [
+      record.user_id,
+      passwordHash,
+    ]);
+  });
+
+  // A reset must not leave an attacker's session alive.
+  const revoked = await revokeAllSessions(record.user_id);
+  await recordAuthEvent({
+    userId: record.user_id,
+    event: 'password_reset_completed',
+    outcome: 'success',
+    reason: `${revoked} session(s) revoked`,
+    ip,
+    userAgent,
+  });
+
+  return { ok: true, sessionsRevoked: revoked };
+}
+
 /* ---------------------------------- profile -------------------------------- */
 
 async function getProfile(userId) {
@@ -714,6 +840,8 @@ async function listSessions(userId) {
 }
 
 module.exports = {
+  requestPasswordReset,
+  resetPassword,
   normalizeEmail,
   domainAllowed,
   allowedDomainHint,

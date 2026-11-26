@@ -84,6 +84,8 @@ POST /api/auth/verify-otp
 
 ```http
 POST /api/auth/resend-otp   { "email": "…", "purpose": "login" }   → 200 / 429 (cooldown, hourly cap)
+POST /api/auth/forgot-password { "email": "…" }                    → 200 (identical for known/unknown)
+POST /api/auth/reset-password  { "token": "…", "password": "…" }   → 200 { sessionsRevoked } / 400
   # only refreshes an existing challenge; it never creates the first code of a
   # purpose, so an OTP alone can never be a login
 POST /api/auth/logout                                              → 200 { loggedOut: true, logoutAt: "…" }
@@ -94,6 +96,28 @@ GET  /api/auth/sessions                                            → own login
 ```
 
 ---
+
+### 1.5 Password reset
+
+```http
+POST /api/auth/forgot-password   { "email": "asha@saiuniversity.edu.in" }
+200 { "ok": true, "message": "If that address belongs to an account, a reset link is on its way.",
+      "expiresInSeconds": 1800 }
+```
+
+The link in the email is `…/reset.html?token=<64 hex characters>`. Only an HMAC
+digest of that token is stored, it works once, it expires after
+`PASSWORD_RESET_TTL_MINUTES` (30), and requesting a new link invalidates the
+previous one.
+
+```http
+POST /api/auth/reset-password   { "token": "…", "password": "NewPassword123" }
+200 { "ok": true, "sessionsRevoked": 2 }
+400 invalid / already used / expired / weak password
+```
+
+Every existing session for the account is revoked, so a stolen session cannot
+survive a reset.
 
 ## 2. Items
 

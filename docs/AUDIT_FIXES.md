@@ -44,7 +44,7 @@ the parts you should not "simplify" later:
 
 ## The test suite after the fixes
 
-112 tests, all passing:
+126 tests, all passing:
 
 | File | Tests | Covers |
 |---|---|---|
@@ -54,7 +54,8 @@ the parts you should not "simplify" later:
 | `tests/admin.test.js` | 15 | admin access control, moderation, audit trail |
 | `tests/security.test.js` | 13 | token tampering, headers, CORS, path traversal |
 | `tests/regressions.test.js` | 12 | one test per audit finding above |
-| `tests/ui.test.js` | 11 | every page boots in a DOM; forms submit the right payloads |
+| `tests/recovery.test.js` | 11 | password reset end to end, listing expiry and owner warnings |
+| `tests/ui.test.js` | 14 | every page boots in a DOM; forms submit the right payloads |
 
 ```bash
 npm test          # ~2 minutes; needs a machine that can run WebAssembly

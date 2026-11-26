@@ -10,6 +10,10 @@
  */
 
 const { query, withTransaction } = require('../db/pool');
+const { getConfig } = require('../config/env');
+const mailer = require('./mailer');
+const templates = require('./emailTemplates');
+const logger = require('../lib/logger');
 const { AppError, badRequest, forbidden, notFound, conflict } = require('../lib/errors');
 const storage = require('./storage');
 
@@ -38,7 +42,7 @@ const TRANSITIONS = {
 
 const PUBLIC_COLUMNS = `i.id, i.type, i.title, i.category, i.description, i.location,
   i.occurred_on, i.occurred_time, i.additional_info, i.status, i.images, i.view_count,
-  i.returned_at, i.created_at, i.updated_at, u.name as owner_name`;
+  i.returned_at, i.expires_at, i.created_at, i.updated_at, u.name as owner_name`;
 
 function assertTransition(item, nextStatus, role) {
   const allowed = TRANSITIONS[item.status] || {};
@@ -67,6 +71,7 @@ function shapeItem(row) {
     images: row.images || [],
     viewCount: row.view_count,
     returnedAt: row.returned_at,
+    expiresAt: row.expires_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     owner: { id: row.owner_id || null, name: row.owner_name || 'Campus member' },
@@ -78,10 +83,13 @@ function shapeItem(row) {
 
 async function createItem({ user, data, processedImages = [] }) {
   const images = await storage.saveImages(processedImages, storage.PUBLIC_PREFIX);
+  const cfg = getConfig();
   const { rows } = await query(
     `insert into items (owner_id, type, title, category, description, location,
-                        occurred_on, occurred_time, additional_info, images, moderation_status)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,'approved')
+                        occurred_on, occurred_time, additional_info, images, moderation_status,
+                        expires_at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,'approved',
+             now() + ($11 || ' days')::interval)
      returning id`,
     [
       user.id,
@@ -94,6 +102,7 @@ async function createItem({ user, data, processedImages = [] }) {
       data.occurredTime || null,
       data.additionalInfo ? data.additionalInfo.trim() : null,
       JSON.stringify(images),
+      String(cfg.ITEM_EXPIRY_DAYS),
     ]
   );
   return getItem(rows[0].id, { viewer: user });
@@ -332,7 +341,62 @@ async function removeItem(id, user) {
   return { removed: true, id };
 }
 
+/**
+ * Housekeeping for stale listings.
+ *
+ *  * warns owners a few days before their listing closes (once per listing)
+ *  * closes listings that are past their expiry date
+ *
+ * Items that are claimed or already returned are left alone: a claim in flight
+ * must never be closed out from under the two people involved.
+ */
+async function expireListings({ warnDays } = {}) {
+  const cfg = getConfig();
+  const days = warnDays === undefined ? cfg.ITEM_EXPIRY_WARN_DAYS : warnDays;
+
+  const warnable = await query(
+    `select i.id, i.title, i.owner_id, u.name as owner_name, u.email as owner_email,
+            ceil(extract(epoch from (i.expires_at - now())) / 86400)::int as days_left
+       from items i join users u on u.id = i.owner_id
+      where i.status = 'open'
+        and i.expiry_warned_at is null
+        and i.expires_at > now()
+        and i.expires_at <= now() + ($1 || ' days')::interval
+      limit 200`,
+    [String(days)]
+  );
+
+  let warned = 0;
+  for (const row of warnable.rows) {
+    try {
+      await mailer.send({
+        to: row.owner_email,
+        ...templates.listingExpiringEmail({
+          name: row.owner_name,
+          itemTitle: row.title,
+          daysLeft: Math.max(1, row.days_left),
+          itemUrl: templates.absolute(`/item.html?id=${row.id}`),
+        }),
+      });
+      await query(`update items set expiry_warned_at = now() where id = $1`, [row.id]);
+      warned += 1;
+    } catch (err) {
+      logger.warn('expiry warning failed', { itemId: row.id, message: err.message });
+    }
+  }
+
+  const closed = await query(
+    `update items
+        set status = 'closed', closed_at = now()
+      where status = 'open' and expires_at is not null and expires_at <= now()
+      returning id`
+  );
+
+  return { warned, closed: closed.rowCount };
+}
+
 module.exports = {
+  expireListings,
   CATEGORIES,
   STATUSES,
   TRANSITIONS,

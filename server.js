@@ -22,6 +22,7 @@ const logger = require('./src/lib/logger');
 const { createApp } = require('./src/app');
 const { health, close } = require('./src/db/pool');
 const { sweepSessions } = require('./src/services/authService');
+const { expireListings } = require('./src/services/itemService');
 
 async function main() {
   const db = await health().catch((err) => {
@@ -38,10 +39,18 @@ async function main() {
   // Expire stale sessions and purge old OTP rows.
   const sweep = async () => {
     try {
-      const result = await sweepSessions();
-      if (result.expiredSessions || result.purgedOtps) logger.info('housekeeping', result);
+      const sessions = await sweepSessions();
+      if (sessions.expiredSessions || sessions.purgedOtps) {
+        logger.info('housekeeping', sessions);
+      }
     } catch (err) {
-      logger.warn('housekeeping failed', { message: err.message });
+      logger.warn('session housekeeping failed', { message: err.message });
+    }
+    try {
+      const items = await expireListings();
+      if (items.warned || items.closed) logger.info('listing housekeeping', items);
+    } catch (err) {
+      logger.warn('listing housekeeping failed', { message: err.message });
     }
   };
   await sweep();

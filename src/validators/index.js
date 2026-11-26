@@ -73,6 +73,15 @@ const updateProfile = z.object({
     .or(z.literal('')),
 });
 
+const forgotPassword = z.object({
+  email,
+});
+
+const resetPassword = z.object({
+  token: z.string().trim().min(32, 'That reset link is not valid').max(200),
+  password,
+});
+
 const changePassword = z.object({
   currentPassword: z.string().min(1).max(128),
   newPassword: password,
@@ -196,6 +205,7 @@ const adminEventsQuery = z.object({
       'admin_login_success',
       'admin_login_failed',
       'password_reset_requested',
+      'password_reset_completed',
     ])
     .optional(),
   email: z.string().trim().max(120).optional(),
@@ -204,6 +214,8 @@ const adminEventsQuery = z.object({
 module.exports = {
   register,
   login,
+  forgotPassword,
+  resetPassword,
   verifyOtp,
   resendOtp,
   updateProfile,

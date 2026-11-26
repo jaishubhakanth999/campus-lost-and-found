@@ -31,7 +31,8 @@ front end's visual identity are all preserved.
 | Images | Trusted the client's MIME type | Decoded and re-encoded with sharp (real type check, EXIF stripped, resized) |
 | Claims | Owner could not read the claim text; double approvals possible | Full claim text in the UI; guarded state machine inside a transaction |
 | Validation | Inline presence checks | zod schemas on every route; 400s with field-level errors |
-| Tests | None | 112 tests: integration against a real PostgreSQL server, plus every page executed in a DOM |
+| Tests | None | 126 tests: integration against a real PostgreSQL server, plus every page executed in a DOM |
+| CI | None | GitHub Actions runs the suite on Node 20 and 22 for every push and pull request |
 
 Full detail, including the audit that motivated each change, is in
 [`docs/SECURITY.md`](docs/SECURITY.md).
@@ -47,6 +48,7 @@ Browser (public/)
   ├── report.html     lost/found report + upload or camera capture
   ├── item.html       item detail, claim submission, owner controls
   ├── dashboard.html  my reports, my claims, claims received, login activity, profile
+  ├── reset.html      forgot-password: request a link, then set a new password
   └── admin/          separate administrator console (login + 7 sections)
 
 Express (src/)
@@ -154,6 +156,8 @@ All responses are JSON. Errors use one shape:
 | POST | `/api/auth/admin/login` | — | Same, administrator portal only |
 | POST | `/api/auth/verify-otp` | — | Exchange OTP for JWT + session |
 | POST | `/api/auth/resend-otp` | — | New code (cooldown + hourly cap) |
+| POST | `/api/auth/forgot-password` | — | Email a single-use reset link (always the same response) |
+| POST | `/api/auth/reset-password` | — | Set a new password from that link; signs every session out |
 | POST | `/api/auth/logout` | user | Close the session, record `logout_at` |
 | GET/PATCH | `/api/auth/me` | user | Profile + statistics / update profile |
 | POST | `/api/auth/change-password` | user | Rotate password, revoke other sessions |
@@ -188,7 +192,7 @@ npm test
 The suite starts a **real PostgreSQL server** (PGlite — PostgreSQL 19 compiled to
 WebAssembly) over TCP, runs the actual migrations against it, drives the HTTP API
 with Supertest, and loads every page in a headless DOM to submit its forms.
-112 tests cover:
+126 tests cover:
 
 - email domain rules, OTP success/failure/expiry/reuse/attempt limits/resend/rate caps
 - unverified and suspended accounts, admin/student portal separation
@@ -199,6 +203,8 @@ with Supertest, and loads every page in a headless DOM to submit its forms.
   re-decision rejection, withdrawal, handover, completion
 - admin access control (401/403 on every admin route), moderation, audit trail
 - JWT tampering, `alg:none`, wrong secret, security headers, CORS
+- password reset: link emailed, hash-only storage, single use, expiry, session revocation
+- listing housekeeping: expiry dates, auto-close, one-time owner warning
 - front-end wiring: every page boots, every form submits the right payload
 - one regression test per finding from the independent review (see
   `docs/AUDIT_FIXES.md`)
@@ -216,6 +222,10 @@ and behaviour under concurrent load. Those need a deployed environment (see
   both redeem it), HMAC-SHA256 with a server-side pepper, 5 attempts, 60 s resend
   cooldown, 6 per hour across all purposes, previous codes superseded. A resend
   only refreshes a challenge that a password check already created.
+- **Password reset** = a 64-character token, stored only as an HMAC digest,
+  single use, 30-minute lifetime, invalidated when a new one is requested, and it
+  signs every session out when used. The request endpoint answers identically for
+  known and unknown addresses.
 - **Sessions** = a row in `user_sessions`. Logout, expiry and admin revocation take
   effect on the next request because the JWT is validated *and* the session is
   looked up. The session lifetime is clamped to the token lifetime so the history
@@ -250,12 +260,14 @@ and behaviour under concurrent load. Those need a deployed environment (see
 
 ## 8. Status and honest limitations
 
-Working and verified locally (89 passing integration tests, every page booted and
-rendered in a headless DOM):
+Working and verified locally (126 tests, every page booted and rendered in a
+headless DOM):
 
 - the complete OTP registration and login flow, sessions, logout tracking
 - item reporting with image upload, galleries, search and filters
 - claims with guarded transitions, handover and completion
+- password reset end to end, including session revocation
+- listing expiry: auto-close plus a single owner nudge
 - the admin console and its audit trail
 - every page booting and every form submitting its payload (headless DOM tests)
 
