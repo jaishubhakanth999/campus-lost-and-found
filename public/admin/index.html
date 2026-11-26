@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Administrator | CampusConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/app.css">
+</head>
+<body class="admin">
+
+  <!-- ============================== LOGIN ============================== -->
+  <main id="authScreen" class="wrap" style="max-width:460px;padding:3rem 0;">
+    <div class="card">
+      <span class="eyebrow">Administrator access</span>
+      <h1 style="font-size:1.5rem;">Admin console</h1>
+
+      <section id="adminLoginPanel">
+        <p class="muted">Restricted to accounts provisioned by the platform owner. Email verification codes are required on every sign-in.</p>
+        <div class="form-alert error" id="adminLoginAlert" hidden></div>
+        <form id="adminLoginForm" novalidate>
+          <div class="field">
+            <label for="adminEmail">Administrator email</label>
+            <input id="adminEmail" name="email" type="email" autocomplete="username" required placeholder="admin@saiuniversity.edu.in">
+          </div>
+          <div class="field">
+            <label for="adminPassword">Password</label>
+            <input id="adminPassword" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn btn-dark btn-full btn-lg" type="submit" id="adminLoginSubmit">Continue</button>
+        </form>
+        <p class="muted" style="margin:1rem 0 0;font-size:.85rem;">
+          Student? <a href="../auth.html">Sign in on the student portal →</a>
+        </p>
+      </section>
+
+      <section id="adminOtpPanel" hidden>
+        <p class="muted">A 6-digit code was sent to <strong id="adminOtpEmail"></strong>. It expires in <strong id="adminOtpExpiry">5 minutes</strong>.</p>
+        <div class="form-alert error" id="adminOtpAlert" hidden></div>
+        <div class="form-alert success" id="adminOtpInfo" hidden></div>
+        <form id="adminOtpForm" novalidate>
+          <fieldset style="border:0;padding:0;margin:0;">
+            <legend class="label">Verification code</legend>
+            <div class="otp-inputs" id="adminOtpInputs">
+              <input inputmode="numeric" autocomplete="one-time-code" maxlength="1" aria-label="Digit 1" data-admin-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 2" data-admin-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 3" data-admin-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 4" data-admin-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 5" data-admin-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 6" data-admin-otp>
+            </div>
+          </fieldset>
+          <button class="btn btn-dark btn-full btn-lg" type="submit" id="adminOtpSubmit">Verify and open console</button>
+        </form>
+        <div class="row" style="justify-content:space-between;margin-top:1rem;">
+          <button class="btn-link" type="button" id="adminResend" disabled>Resend code in 60s</button>
+          <button class="btn-link" type="button" id="adminBack">Use a different email</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============================= CONSOLE ============================= -->
+  <div id="consoleScreen" class="admin-shell" hidden>
+    <aside class="admin-side">
+      <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true">C</span><span>Campus<span class="brand-accent">Connect</span></span></a>
+      <button data-section="overview" aria-current="true">Overview</button>
+      <button data-section="users">Users</button>
+      <button data-section="items">Lost &amp; found</button>
+      <button data-section="claims">Claims</button>
+      <button data-section="sessions">Login history</button>
+      <button data-section="events">Security events</button>
+      <button data-section="audit">Audit log</button>
+      <div style="margin-top:auto;padding-top:1rem;border-top:1px solid rgba(255,255,255,.15);">
+        <p style="font-size:.8rem;color:#9fb4a8;margin:0 0 .5rem;" id="adminWho"></p>
+        <button data-admin-logout>Sign out</button>
+      </div>
+    </aside>
+    <main class="admin-main">
+      <div class="spread" style="margin-bottom:1.25rem;">
+        <div>
+          <h1 id="sectionTitle" style="margin:0;">Overview</h1>
+          <p class="muted" id="sectionSub" style="margin:.25rem 0 0;"></p>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="../index.html">View public site</a>
+      </div>
+      <div id="adminPanel" aria-live="polite">
+        <div class="skeleton" style="height:200px;"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/config.js"></script>
+  <script src="../assets/api.js"></script>
+  <script src="../assets/admin.js"></script>
+</body>
+</html>

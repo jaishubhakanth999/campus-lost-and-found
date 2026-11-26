@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Sign in | CampusConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">C</span><span>Campus<span class="brand-accent">Connect</span></span></a>
+      <nav class="nav-links" data-nav-links aria-label="Main"></nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap" style="max-width:520px;padding:2.5rem 0 3rem;">
+    <div class="card">
+      <!-- Step 1a: sign in -->
+      <section id="panelLogin">
+        <h1 style="font-size:1.7rem;">Welcome back.</h1>
+        <p class="muted">Sign in with your university email. We will send a 6-digit code to confirm it is you.</p>
+        <div class="form-alert error" id="loginAlert" hidden></div>
+        <form id="loginForm" novalidate>
+          <div class="field">
+            <label for="loginEmail">University email</label>
+            <input id="loginEmail" name="email" type="email" autocomplete="username" required placeholder="you@saiuniversity.edu.in">
+          </div>
+          <div class="field">
+            <label for="loginPassword">Password</label>
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="Your password">
+          </div>
+          <button class="btn btn-primary btn-full btn-lg" type="submit" id="loginSubmit">Continue</button>
+        </form>
+        <p class="muted" style="margin-top:1rem;font-size:0.9rem;">
+          New here? <button class="btn-link" type="button" data-goto="register">Create your account</button>
+          · <a href="reset.html">Forgot password?</a>
+        </p>
+      </section>
+
+      <!-- Step 1b: register -->
+      <section id="panelRegister" hidden>
+        <h1 style="font-size:1.7rem;">Create your account.</h1>
+        <p class="muted">Only university email addresses are accepted. We will verify it with a one-time code.</p>
+        <div class="form-alert error" id="registerAlert" hidden></div>
+        <form id="registerForm" novalidate>
+          <div class="field">
+            <label for="regName">Full name</label>
+            <input id="regName" name="name" type="text" autocomplete="name" required minlength="2" maxlength="80" placeholder="Your full name">
+          </div>
+          <div class="field">
+            <label for="regEmail">University email</label>
+            <input id="regEmail" name="email" type="email" autocomplete="email" required placeholder="you@saiuniversity.edu.in">
+            <span class="hint" id="domainHint">Use your university-issued address.</span>
+          </div>
+          <div class="field">
+            <label for="regPassword">Password</label>
+            <input id="regPassword" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+            <span class="hint">At least 8 characters, including a letter and a number.</span>
+          </div>
+          <button class="btn btn-primary btn-full btn-lg" type="submit" id="registerSubmit">Create account</button>
+        </form>
+        <p class="muted" style="margin-top:1rem;font-size:0.9rem;">
+          Already registered? <button class="btn-link" type="button" data-goto="login">Sign in</button>
+        </p>
+      </section>
+
+      <!-- Step 2: OTP -->
+      <section id="panelOtp" hidden>
+        <span class="eyebrow">One more step</span>
+        <h1 style="font-size:1.7rem;">Enter your code</h1>
+        <p class="muted">
+          We sent a 6-digit code to <strong id="otpEmail">your email</strong>.
+          It expires in <strong id="otpExpiry">5 minutes</strong>.
+        </p>
+        <div class="form-alert error" id="otpAlert" hidden></div>
+        <div class="form-alert success" id="otpInfo" hidden></div>
+        <form id="otpForm" novalidate>
+          <fieldset style="border:0;padding:0;margin:0;">
+            <legend class="label">Verification code</legend>
+            <div class="otp-inputs" id="otpInputs">
+              <input inputmode="numeric" autocomplete="one-time-code" maxlength="1" aria-label="Digit 1" data-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 2" data-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 3" data-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 4" data-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 5" data-otp>
+              <input inputmode="numeric" maxlength="1" aria-label="Digit 6" data-otp>
+            </div>
+          </fieldset>
+          <button class="btn btn-primary btn-full btn-lg" type="submit" id="otpSubmit">Verify and continue</button>
+        </form>
+        <div class="row" style="justify-content:space-between;margin-top:1rem;">
+          <button class="btn-link" type="button" id="resendBtn" disabled>Resend code in 60s</button>
+          <button class="btn-link" type="button" id="backBtn">Use a different email</button>
+        </div>
+      </section>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:1.5rem 0;">
+      <p class="muted" style="margin:0;font-size:0.85rem;">
+        Administrator? <a href="admin/">Sign in to the admin console →</a>
+      </p>
+    </div>
+
+    <p class="muted center" style="font-size:0.82rem;margin-top:1.25rem;">
+      We never ask for your password or code by phone, chat or in person.
+    </p>
+  </main>
+
+  <script src="assets/config.js"></script>
+  <script src="assets/api.js"></script>
+  <script src="assets/auth.js"></script>
+</body>
+</html>

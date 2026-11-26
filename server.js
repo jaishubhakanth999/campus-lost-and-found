@@ -1,48 +1,79 @@
-const dns = require('dns');
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+'use strict';
 
-require("dotenv").config();
-const express = require("express");
-const mongoose = require("mongoose");
-const path = require("path");
-const helmet = require("helmet");
-const cors = require("cors");
-const rateLimit = require("express-rate-limit");
+/**
+ * CampusConnect server bootstrap.
+ *
+ * Fails fast on bad configuration, sweeps expired sessions/OTPs on a timer, and
+ * shuts down gracefully so a deploy never cuts a request in half.
+ */
 
-const authRoutes = require("./src/routes/authRoutes");
-const itemRoutes = require("./src/routes/itemRoutes");
-const claimRoutes = require("./src/routes/claimRoutes");
-const adminRoutes = require("./src/routes/adminRoutes");
+const { buildConfig } = require('./src/config/env');
 
-const app = express();
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
-app.use(cors());
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use(express.static(path.join(__dirname, "public")));
+let cfg;
+try {
+  cfg = buildConfig(process.env);
+} catch (err) {
+  console.error(err.message);
+  console.error('\nCopy .env.example to .env and fill in the values above.');
+  process.exit(1);
+}
 
-app.use("/api", rateLimit({ windowMs: 15 * 60 * 1000, max: 250 }));
-app.get("/api/health", (req, res) => res.json({ status: "ok", message: "Campus Lost and Found API is running" }));
+const logger = require('./src/lib/logger');
+const { createApp } = require('./src/app');
+const { health, close } = require('./src/db/pool');
+const { sweepSessions } = require('./src/services/authService');
+const { expireListings } = require('./src/services/itemService');
 
-app.use("/api/auth", authRoutes);
-app.use("/api/items", itemRoutes);
-app.use("/api/claims", claimRoutes);
-app.use("/api/admin", adminRoutes);
-
-app.use((req, res) => res.status(404).json({ message: "Route not found" }));
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(err.status || 500).json({ message: err.message || "Internal server error" });
-});
-
-const PORT = process.env.PORT || 3000;
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("MongoDB connected");
-    app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
-  })
-  .catch((error) => {
-    console.error("MongoDB connection failed:", error.message);
+async function main() {
+  const db = await health().catch((err) => {
+    logger.error('database unreachable at boot', { message: err.message });
     process.exit(1);
   });
+  logger.info('database connected', { latencyMs: db.latencyMs });
+
+  const app = createApp();
+  const server = app.listen(cfg.PORT, () => {
+    logger.info('server listening', { port: cfg.PORT, env: cfg.NODE_ENV, url: cfg.APP_URL });
+  });
+
+  // Expire stale sessions and purge old OTP rows.
+  const sweep = async () => {
+    try {
+      const sessions = await sweepSessions();
+      if (sessions.expiredSessions || sessions.purgedOtps) {
+        logger.info('housekeeping', sessions);
+      }
+    } catch (err) {
+      logger.warn('session housekeeping failed', { message: err.message });
+    }
+    try {
+      const items = await expireListings();
+      if (items.warned || items.closed) logger.info('listing housekeeping', items);
+    } catch (err) {
+      logger.warn('listing housekeeping failed', { message: err.message });
+    }
+  };
+  await sweep();
+  const timer = setInterval(sweep, 10 * 60 * 1000);
+  timer.unref();
+
+  const shutdown = async (signal) => {
+    logger.info('shutting down', { signal });
+    server.close(async () => {
+      await close();
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10_000).unref();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
+  process.on('unhandledRejection', (reason) => {
+    logger.error('unhandled promise rejection', { message: String(reason) });
+  });
+}
+
+main().catch((err) => {
+  logger.error('fatal startup error', { message: err.message });
+  process.exit(1);
+});

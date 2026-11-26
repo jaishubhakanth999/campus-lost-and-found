@@ -1,0 +1,776 @@
+{
+  "info": {
+    "name": "CampusConnect API",
+    "description": "CampusConnect (Sai University lost & found) — PostgreSQL/Supabase build.\n\nRun the folders in order: Health → Auth → Items → Claims → Admin.\n\nBefore running, set the collection variables:\n  baseUrl        e.g. http://localhost:3000/api\n  testEmail      a university email you can read\n  testPassword   a password with a letter and a number\n  otpCode        the 6-digit code from the inbox (or tmp/mail-outbox in dev)\n\nRequests capture tokens automatically: studentToken, adminToken, itemId, claimId.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "testEmail",
+      "value": "student@saiuniversity.edu.in"
+    },
+    {
+      "key": "testPassword",
+      "value": "Campus123"
+    },
+    {
+      "key": "otpCode",
+      "value": ""
+    },
+    {
+      "key": "studentToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@saiuniversity.edu.in"
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "itemId",
+      "value": ""
+    },
+    {
+      "key": "claimId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1 · Health",
+      "item": [
+        {
+          "name": "Health check (expect 200 + database connected)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('database connected', () => pm.expect(b.database.connected).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 · Auth (OTP flow)",
+      "item": [
+        {
+          "name": "Register (expect 201, no token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Test Student\",\"email\":\"{{testEmail}}\",\"password\":\"{{testPassword}}\"}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 or 409 if already registered', () => pm.expect([201,409]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "if (pm.response.code === 201) {",
+                  "  pm.test('no JWT before verification', () => pm.expect(b.token).to.be.undefined);",
+                  "  pm.test('otp required', () => pm.expect(b.otpRequired).to.eql(true));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register with a non-university domain (expect 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Outsider\",\"email\":\"outsider@gmail.com\",\"password\":\"Campus123\"}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('403 domain rejected', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (expect 200 + otpRequired, no token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{testEmail}}\",\"password\":\"{{testPassword}}\"}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('no token yet', () => pm.expect(b.token).to.be.undefined);",
+                  "pm.collectionVariables.set('otpPurpose', b.purpose);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP → captures studentToken",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{testEmail}}\",\"code\":\"{{otpCode}}\",\"purpose\":\"{{otpPurpose}}\"}"
+            },
+            "url": "{{baseUrl}}/auth/verify-otp"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('studentToken', b.token);",
+                  "pm.test('token issued', () => pm.expect(b.token).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify with a wrong code (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{testEmail}}\",\"code\":\"000000\",\"purpose\":\"login\"}"
+            },
+            "url": "{{baseUrl}}/auth/verify-otp"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me (expect 200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('no password hash', () => pm.expect(pm.response.text()).to.not.include('password_hash'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me without a token (expect 401)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin login (expect 403 for a student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{testEmail}}\",\"password\":\"{{testPassword}}\"}"
+            },
+            "url": "{{baseUrl}}/auth/admin/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('403 wrong portal', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 · Items",
+      "item": [
+        {
+          "name": "Create a found item with a photo → captures itemId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "found",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "Black leather wallet",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "Accessories",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Black leather wallet with a blue sticker and a library card inside.",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Central Library",
+                  "type": "text"
+                },
+                {
+                  "key": "occurredOn",
+                  "value": "2026-11-20",
+                  "type": "text"
+                },
+                {
+                  "key": "occurredTime",
+                  "value": "14:30",
+                  "type": "text"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/items"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "if (b.item) { pm.collectionVariables.set('itemId', b.item.id); }",
+                  "pm.test('image stored and re-encoded', () => { if (b.item && b.item.images.length) pm.expect(b.item.images[0].mime).to.eql('image/webp'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create without a token (expect 401)",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "x",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/items"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create with an invalid category (expect 400 + fields)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "lost",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "Bad category",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "Spaceships",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "This description is long enough to pass the minimum.",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Library",
+                  "type": "text"
+                },
+                {
+                  "key": "occurredOn",
+                  "value": "2026-11-20",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/items"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('field errors present', () => pm.expect(pm.response.json().error.fields.category).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public gallery with filters",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/items?type=found&category=Accessories&page=1&limit=12"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('pagination meta', () => { const b = pm.response.json(); pm.expect(b).to.have.keys('items','page','limit','total','pages'); });",
+                  "pm.test('no owner emails in public data', () => pm.expect(pm.response.text()).to.not.match(/\"email\":/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Operator injection is rejected (expect 400)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/items?status[$ne]=open"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Item detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/items/{{itemId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('owner email not exposed', () => pm.expect(pm.response.text()).to.not.include('@saiuniversity.edu.in'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark returned (owner lifecycle change)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"returned\"}"
+            },
+            "url": "{{baseUrl}}/items/{{itemId}}/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 · Claims",
+      "item": [
+        {
+          "name": "Submit a claim → captures claimId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "itemId",
+                  "value": "{{itemId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "message",
+                  "value": "The wallet has my library card inside and a blue sticker on the back.",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/claims"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 or 400 claiming your own listing', () => pm.expect([201,400]).to.include(pm.response.code));",
+                  "const b = pm.response.json();",
+                  "if (b.claim) pm.collectionVariables.set('claimId', b.claim.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Claims received (owner view, includes the message)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/claims/received"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "if (b.claims && b.claims.length) pm.test('claim text is returned to the owner', () => pm.expect(b.claims[0].message).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve the claim (expect 200 or 409 if already decided)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"decision\":\"approved\",\"note\":\"Matches the description.\"}"
+            },
+            "url": "{{baseUrl}}/claims/{{claimId}}/decision"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 or 409', () => pm.expect([200,409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve it again (expect 409 — replay blocked)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"decision\":\"approved\"}"
+            },
+            "url": "{{baseUrl}}/claims/{{claimId}}/decision"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 · Admin",
+      "item": [
+        {
+          "name": "Admin login → OTP → verify (captures adminToken)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{adminEmail}}\",\"password\":\"{{adminPassword}}\"}"
+            },
+            "url": "{{baseUrl}}/auth/admin/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 (OTP challenge)', () => pm.response.to.have.status(200));",
+                  "pm.test('no token yet', () => pm.expect(pm.response.json().token).to.be.undefined);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin overview (expect 200, or 403 with a student token)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/overview"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 or 403', () => pm.expect([200,403]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) pm.test('counters present', () => pm.expect(pm.response.json().overview.total_users).to.be.a('number'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin routes with a student token (expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Audit log (admin only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/admin/audit-logs"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 or 403', () => pm.expect([200,403]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
