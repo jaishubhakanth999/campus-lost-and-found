@@ -109,6 +109,24 @@ test('oversized JSON bodies are rejected', async () => {
   assert.equal(res.status, 413);
 });
 
+test('production refuses a non-https APP_URL', () => {
+  const { buildConfig } = require('../src/config/env');
+  const base = {
+    NODE_ENV: 'production',
+    APP_URL: 'http://campusconnect.test',
+    DATABASE_URL: 'postgres://user:pass@host:5432/db',
+    JWT_SECRET: 'x'.repeat(48),
+    OTP_PEPPER: 'y'.repeat(48),
+    ALLOWED_EMAIL_DOMAINS: 'saiuniversity.edu.in',
+  };
+  assert.throws(() => buildConfig(base), /https/i);
+
+  // ... and accepts the same configuration over https
+  const cfg = buildConfig({ ...base, APP_URL: 'https://campusconnect.test' });
+  assert.equal(cfg.isProd, true);
+  assert.equal(cfg.APP_URL, 'https://campusconnect.test');
+});
+
 test('the health endpoint does not leak configuration', async () => {
   const res = await request(app).get('/api/health');
   const body = JSON.stringify(res.body);
