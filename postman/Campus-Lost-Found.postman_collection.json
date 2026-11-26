@@ -1,0 +1,185 @@
+{
+  "info": {
+    "name": "Campus Lost and Found API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "token",
+      "value": "PASTE_LOGIN_TOKEN"
+    },
+    {
+      "key": "itemId",
+      "value": "PASTE_ITEM_ID"
+    },
+    {
+      "key": "claimId",
+      "value": "PASTE_CLAIM_ID"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"Test Student\",\"email\":\"student@example.com\",\"password\":\"StudentPass123\"}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"student@example.com\",\"password\":\"StudentPass123\"}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Get all items",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/items"
+      }
+    },
+    {
+      "name": "Search found electronics",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/items?type=found&category=Electronics&search=phone"
+      }
+    },
+    {
+      "name": "Create item (authenticated)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "title",
+              "value": "Test wallet",
+              "type": "text"
+            },
+            {
+              "key": "category",
+              "value": "Accessories",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "value": "Brown wallet with initials",
+              "type": "text"
+            },
+            {
+              "key": "location",
+              "value": "Library",
+              "type": "text"
+            },
+            {
+              "key": "date",
+              "value": "2026-11-13",
+              "type": "text"
+            },
+            {
+              "key": "type",
+              "value": "found",
+              "type": "text"
+            }
+          ]
+        },
+        "url": "{{baseUrl}}/items"
+      }
+    },
+    {
+      "name": "Get one item",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/items/{{itemId}}"
+      }
+    },
+    {
+      "name": "Update item status",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\":\"returned\"}"
+        },
+        "url": "{{baseUrl}}/items/{{itemId}}"
+      }
+    },
+    {
+      "name": "Submit claim",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"itemId\":\"{{itemId}}\",\"message\":\"I can identify the item by its unique sticker.\"}"
+        },
+        "url": "{{baseUrl}}/claims"
+      }
+    },
+    {
+      "name": "Unauthorized create item (expected 401)",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/items"
+      }
+    }
+  ]
+}
