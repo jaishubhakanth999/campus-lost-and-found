@@ -3,91 +3,133 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Sai University Campus Lost and Found Portal">
-  <title>CampusConnect | Lost & Found</title>
+  <meta name="description" content="CampusConnect — the Sai University lost and found portal. Report a lost item, post something you found, and claim what is yours.">
+  <title>CampusConnect | Sai University Lost &amp; Found</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="assets/app.css">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#"><span class="brand-mark">C</span><span>Campus<span class="brand-accent">Connect</span><small>SAI UNIVERSITY</small></span></a>
-    <nav><a href="#browse">Browse items</a><a href="#how">How it works</a><button class="btn btn-outline" id="loginOpen">Login</button><button class="btn btn-primary" id="reportOpen">+ Report item</button><button class="btn btn-outline hidden" id="logoutBtn">Logout</button></nav>
+  <a class="sr-only" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>Campus<span class="brand-accent">Connect</span></span>
+      </a>
+      <button class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="primary-nav" aria-label="Toggle navigation">☰</button>
+      <nav class="nav-links" id="primary-nav" data-nav-links aria-label="Main"></nav>
+    </div>
   </header>
 
-  <main>
+  <main id="main">
     <section class="hero">
-      <div class="hero-content">
-        <span class="eyebrow"><span class="live-dot"></span> THE CAMPUS COMMUNITY NETWORK</span>
-        <h1>Lost something?<br><em>Found something?</em></h1>
-        <p>One campus. One community. Let's help every lost belonging find its way home.</p>
-        <div class="hero-actions"><button class="btn btn-primary btn-large" id="heroReport">Report an item <span>↗</span></button><a class="btn btn-light btn-large" href="#browse">Explore listings ↓</a></div>
-        <div class="hero-note"><span class="avatar-stack">●●●</span> Helping our campus community reconnect</div>
-      </div>
-      <div class="hero-art">
-        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-        <div class="floating-card card-phone"><span class="float-icon">▣</span><div><b>Phone found</b><small>Central Library</small></div><span class="float-check">✓</span></div>
-        <div class="floating-card card-book"><span class="float-icon yellow">▤</span><div><b>Notebook</b><small>Block A · 10:30 AM</small></div></div>
-        <div class="hero-circle"><div class="circle-inner">⌕</div><span class="circle-label">REUNITING<br>WHAT MATTERS</span></div>
-        <div class="mini-tag">✦ Community-powered</div>
+      <div class="wrap hero-grid">
+        <div>
+          <span class="eyebrow">The campus community network</span>
+          <h1>Lost something?<br><em>Found something?</em></h1>
+          <p class="muted" style="max-width:44ch;">
+            One campus, one community. Report what you lost, post what you found, and let every
+            belonging find its way home — verified student accounts only.
+          </p>
+          <div class="row" style="margin-top:1.25rem;">
+            <a class="btn btn-primary btn-lg" href="report.html">Report an item</a>
+            <a class="btn btn-ghost btn-lg" href="#browse">Explore listings</a>
+          </div>
+          <p class="muted" style="margin-top:1rem;font-size:0.85rem;">
+            Every account is verified with a university email one-time code.
+          </p>
+        </div>
+        <div class="card card-flat" style="background:var(--green);color:#fff;border:0;">
+          <h2 style="color:#fff;font-size:1.1rem;">How it works</h2>
+          <ol style="padding-left:1.1rem;margin:0.5rem 0 0;line-height:1.9;font-size:0.95rem;">
+            <li>Sign in with your university email and a one-time code.</li>
+            <li>Report a lost or found item, with a photo.</li>
+            <li>Claim an item with details only the owner would know.</li>
+            <li>Meet at a campus spot and confirm the return.</li>
+          </ol>
+        </div>
       </div>
     </section>
 
-    <section class="stats-strip">
-      <div><strong id="totalItems">—</strong><span>Community listings</span></div><div><strong id="lostCount">—</strong><span>Items reported lost</span></div><div><strong id="foundCount">—</strong><span>Items found</span></div><div><strong>24/7</strong><span>Always accessible</span></div>
-    </section>
-
-    <section class="section" id="browse">
-      <div class="section-heading"><div><span class="eyebrow">COMMUNITY BOARD</span><h2>Find what you're <em>looking for.</em></h2><p>Browse recent reports from across the university.</p></div><button class="text-link" id="refreshBtn">Refresh listings ↻</button></div>
-      <div class="filter-panel">
-        <div class="search-wrap"><span>⌕</span><input id="searchInput" placeholder="Search by item, keyword or location..."></div>
-        <select id="typeFilter"><option value="">All listings</option><option value="lost">Lost items</option><option value="found">Found items</option></select>
-        <select id="categoryFilter"><option value="">All categories</option><option>Electronics</option><option>Books</option><option>ID Cards</option><option>Bags</option><option>Clothing</option><option>Accessories</option><option>Other</option></select>
-        <input id="locationFilter" placeholder="Location">
-        <select id="sortFilter"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select>
-        <button class="btn btn-dark" id="searchBtn">Search</button>
+    <section class="wrap" aria-label="Platform statistics">
+      <div class="stat-strip">
+        <div class="stat"><strong id="statTotal">—</strong><span>Active listings</span></div>
+        <div class="stat"><strong id="statLost">—</strong><span>Items reported lost</span></div>
+        <div class="stat"><strong id="statFound">—</strong><span>Items found</span></div>
+        <div class="stat"><strong id="statReturned">—</strong><span>Reunited with owners</span></div>
       </div>
-      <div class="results-line"><span id="resultCount">Loading listings...</span><span>Showing latest community reports</span></div>
-      <div class="item-grid" id="itemGrid"><div class="loading">Loading campus listings...</div></div>
     </section>
 
-    <section class="how-section" id="how">
-      <div><span class="eyebrow">SIMPLE. SAFE. COMMUNITY-LED.</span><h2>Good things find<br><em>their way back.</em></h2><p>Our simple process helps students report belongings and reconnect with their owners.</p></div>
-      <div class="steps"><article><span>01</span><div><h3>Report it</h3><p>Share a lost or found item with its details and location.</p></div></article><article><span>02</span><div><h3>Find a match</h3><p>Search listings and use filters to find the right item.</p></div></article><article><span>03</span><div><h3>Make a claim</h3><p>Send a claim with identifying details for review.</p></div></article></div>
+    <section class="wrap" id="browse" style="margin-top:2.5rem;">
+      <div class="spread" style="margin-bottom:1rem;">
+        <div>
+          <h2>Community board</h2>
+          <p class="muted" style="margin:0;">Browse recent reports from across the university.</p>
+        </div>
+        <p class="muted" id="resultCount" role="status" aria-live="polite" style="margin:0;"></p>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Listing type">
+        <button role="tab" data-type="" aria-selected="true" id="tabAll">All listings</button>
+        <button role="tab" data-type="lost" aria-selected="false" id="tabLost">Lost items</button>
+        <button role="tab" data-type="found" aria-selected="false" id="tabFound">Found items</button>
+      </div>
+
+      <form class="filters" id="filterForm" role="search" aria-label="Filter listings">
+        <div class="field" style="margin:0;">
+          <label for="search">Search</label>
+          <input id="search" name="search" type="search" placeholder="Wallet, ID card, water bottle…" autocomplete="off">
+        </div>
+        <div class="field" style="margin:0;">
+          <label for="category">Category</label>
+          <select id="category" name="category">
+            <option value="">All categories</option>
+            <option>Electronics</option>
+            <option>Books</option>
+            <option>ID Cards</option>
+            <option>Bags</option>
+            <option>Clothing</option>
+            <option>Accessories</option>
+            <option>Documents</option>
+            <option>Keys</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0;">
+          <label for="location">Location</label>
+          <input id="location" name="location" list="locationList" placeholder="e.g. Library" autocomplete="off">
+          <datalist id="locationList"></datalist>
+        </div>
+        <div class="field" style="margin:0;">
+          <label for="sort">Sort</label>
+          <select id="sort" name="sort">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="recent">Date of loss</option>
+          </select>
+        </div>
+        <button class="btn btn-dark" type="submit" style="height:44px;">Apply</button>
+      </form>
+
+      <div class="gallery" id="gallery" style="margin-top:1.5rem;" aria-busy="true">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+      <nav class="pager" id="pager" aria-label="Pagination"></nav>
     </section>
   </main>
 
-  <footer><a class="brand" href="#"><span class="brand-mark">C</span><span>Campus<span class="brand-accent">Connect</span><small>SAI UNIVERSITY</small></span></a><p>Built for a more connected campus community.</p><span>© 2026 CampusConnect</span></footer>
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>© <span id="year">2026</span> CampusConnect · Sai University</span>
+      <span>Built for a more connected campus community.</span>
+    </div>
+  </footer>
 
-  <dialog id="authDialog" class="modal">
-    <button class="modal-close" data-close>×</button><span class="eyebrow">WELCOME TO CAMPUSCONNECT</span><h2 id="authTitle">Welcome back.</h2>
-    <form id="authForm"><div id="nameField" class="field hidden"><label>Full name</label><input name="name" placeholder="Your name"></div><div class="field"><label>University email</label><input name="email" type="email" required placeholder="you@university.edu"></div><div class="field"><label>Password</label><input name="password" type="password" required minlength="8" placeholder="At least 8 characters"></div><button class="btn btn-primary btn-full" id="authSubmit">Login</button></form>
-    <p class="switch-auth" id="authSwitch">New here? <button type="button" id="switchMode">Create an account</button></p>
-  </dialog>
-
-  <dialog id="reportDialog" class="modal modal-wide">
-    <button class="modal-close" data-close>×</button><span class="eyebrow">HELP THE COMMUNITY</span><h2>Report an item.</h2><p class="modal-intro">Add clear details so the right person can find it.</p>
-    <form id="reportForm" class="form-grid">
-      <div class="field"><label>Report type</label><select name="type" required><option value="lost">I lost this item</option><option value="found">I found this item</option></select></div>
-      <div class="field"><label>Item name</label><input name="title" required maxlength="100" placeholder="e.g. Black laptop bag"></div>
-      <div class="field"><label>Category</label><select name="category" required><option value="">Choose category</option><option>Electronics</option><option>Books</option><option>ID Cards</option><option>Bags</option><option>Clothing</option><option>Accessories</option><option>Other</option></select></div>
-      <div class="field"><label>Location</label><input name="location" required placeholder="e.g. Central Library"></div>
-      <div class="field"><label>Date</label><input name="date" type="date" required></div>
-      <div class="field"><label>Photo (optional, JPG/PNG/WEBP, max 3MB)</label><input name="image" type="file" accept="image/jpeg,image/png,image/webp"></div>
-      <div class="field full"><label>Description</label><textarea name="description" required maxlength="1000" rows="3" placeholder="Describe the item and any identifying details..."></textarea></div>
-      <button class="btn btn-primary btn-full full">Publish report ↗</button>
-    </form>
-  </dialog>
-
-  <dialog id="claimDialog" class="modal">
-    <button class="modal-close" data-close>×</button><span class="eyebrow">ITEM CLAIM</span><h2>Is this yours?</h2><p class="modal-intro" id="claimItemName"></p>
-    <form id="claimForm"><input type="hidden" name="itemId"><div class="field"><label>How can you identify this item?</label><textarea name="message" rows="4" required maxlength="1000" placeholder="Share details only the owner would know..."></textarea></div><button class="btn btn-primary btn-full">Submit claim</button></form>
-  </dialog>
-
-  <dialog id="dashboardDialog" class="modal modal-wide">
-    <button class="modal-close" data-close>×</button><span class="eyebrow">YOUR CAMPUS ACTIVITY</span><h2>My dashboard.</h2><div class="dashboard-tabs"><button class="active" data-tab="myItems">My listings</button><button data-tab="myClaims">My claims</button><button data-tab="receivedClaims">Claims received</button><button class="hidden" id="adminTab" data-tab="admin">Admin overview</button></div><div id="dashboardContent"></div>
-  </dialog>
-  <div class="toast" id="toast"></div>
-  <script src="app.js"></script>
+  <script src="assets/config.js"></script>
+  <script src="assets/api.js"></script>
+  <script src="assets/gallery.js"></script>
 </body>
 </html>

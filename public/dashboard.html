@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>My dashboard | CampusConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">C</span><span>Campus<span class="brand-accent">Connect</span></span></a>
+      <button class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="primary-nav" aria-label="Toggle navigation">☰</button>
+      <nav class="nav-links" id="primary-nav" data-nav-links aria-label="Main"></nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap" style="padding:1.75rem 0 3rem;">
+    <div class="spread" style="margin-bottom:1.25rem;">
+      <div>
+        <h1 style="margin:0;">My dashboard</h1>
+        <p class="muted" style="margin:.25rem 0 0;" id="greeting">Loading your activity…</p>
+      </div>
+      <a class="btn btn-primary" href="report.html">+ Report an item</a>
+    </div>
+
+    <div id="overview" class="metric-grid" style="margin-bottom:1.5rem;"></div>
+
+    <div class="dash-grid">
+      <nav class="side-nav" aria-label="Dashboard sections">
+        <button data-tab="reports" aria-current="true">My reports</button>
+        <button data-tab="claims">My claims</button>
+        <button data-tab="received">Claims received</button>
+        <button data-tab="sessions">Login activity</button>
+        <button data-tab="profile">Profile settings</button>
+      </nav>
+      <section id="panel" class="panel" aria-live="polite">
+        <div class="skeleton" style="height:160px;"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="assets/config.js"></script>
+  <script src="assets/api.js"></script>
+  <script src="assets/dashboard.js"></script>
+</body>
+</html>

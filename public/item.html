@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Item details | CampusConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">C</span><span>Campus<span class="brand-accent">Connect</span></span></a>
+      <button class="nav-toggle" data-nav-toggle aria-expanded="false" aria-controls="primary-nav" aria-label="Toggle navigation">☰</button>
+      <nav class="nav-links" id="primary-nav" data-nav-links aria-label="Main"></nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap" style="padding:1.75rem 0 3rem;">
+    <p><a href="index.html">← Back to the gallery</a></p>
+    <div id="itemRoot" aria-busy="true">
+      <div class="skeleton" style="height:320px;"></div>
+    </div>
+  </main>
+
+  <!-- Claim dialog -->
+  <dialog id="claimDialog" aria-labelledby="claimTitle">
+    <div class="dialog-body">
+      <div class="dialog-head">
+        <div>
+          <span class="eyebrow">Item claim</span>
+          <h2 id="claimTitle" style="font-size:1.3rem;">Is this yours?</h2>
+        </div>
+        <button class="dialog-close" type="button" data-close aria-label="Close">×</button>
+      </div>
+      <p class="muted" id="claimItemName"></p>
+      <div class="form-alert error" id="claimAlert" hidden></div>
+      <form id="claimForm">
+        <div class="field">
+          <label for="claimMessage">How can you identify this item?</label>
+          <textarea id="claimMessage" name="message" required minlength="10" maxlength="1000" rows="4"
+            placeholder="Share details only the real owner would know — a scratch, what was inside, an engraving…"></textarea>
+          <span class="hint">The finder reads this to decide. Never include your password or bank details.</span>
+        </div>
+        <div class="field">
+          <label for="claimEvidence">Supporting photo <span class="hint" style="display:inline;">(optional, private)</span></label>
+          <input id="claimEvidence" name="evidence" type="file" accept="image/jpeg,image/png,image/webp">
+          <span class="hint">Only you and the finder can see this — it is never shown in the public gallery.</span>
+        </div>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn btn-ghost" type="button" data-close>Cancel</button>
+          <button class="btn btn-primary" type="submit" id="claimSubmit">Submit claim</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Owner edit dialog -->
+  <dialog id="editDialog" aria-labelledby="editTitle">
+    <div class="dialog-body">
+      <div class="dialog-head">
+        <h2 id="editTitle" style="font-size:1.3rem;">Edit your report</h2>
+        <button class="dialog-close" type="button" data-close aria-label="Close">×</button>
+      </div>
+      <div class="form-alert error" id="editAlert" hidden></div>
+      <form id="editForm">
+        <div class="grid-2">
+          <div class="field full">
+            <label for="editTitleInput">Item name</label>
+            <input id="editTitleInput" name="title" type="text" required maxlength="100">
+          </div>
+          <div class="field">
+            <label for="editCategory">Category</label>
+            <select id="editCategory" name="category" required>
+              <option>Electronics</option><option>Books</option><option>ID Cards</option>
+              <option>Bags</option><option>Clothing</option><option>Accessories</option>
+              <option>Documents</option><option>Keys</option><option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editLocation">Location</label>
+            <input id="editLocation" name="location" type="text" required maxlength="120">
+          </div>
+          <div class="field">
+            <label for="editDate">Date</label>
+            <input id="editDate" name="occurredOn" type="date" required>
+          </div>
+          <div class="field">
+            <label for="editTime">Time</label>
+            <input id="editTime" name="occurredTime" type="time">
+          </div>
+          <div class="field full">
+            <label for="editDescription">Description</label>
+            <textarea id="editDescription" name="description" required maxlength="1000" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="row" style="justify-content:flex-end;">
+          <button class="btn btn-ghost" type="button" data-close>Cancel</button>
+          <button class="btn btn-primary" type="submit" id="editSubmit">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <script src="assets/config.js"></script>
+  <script src="assets/api.js"></script>
+  <script src="assets/item.js"></script>
+</body>
+</html>
