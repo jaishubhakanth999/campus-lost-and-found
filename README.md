@@ -126,6 +126,10 @@ console or written to logs.)
 
 ### 3.5 Create an administrator
 
+Two ways: the script below (validates the domain and writes an audit entry), or
+`node scripts/hash-password.js` if you only have the Supabase SQL Editor. Both are
+described in `docs/DEPLOYMENT.md`.
+
 There is **no public admin registration**. Provision an administrator from the
 shell of the deployment:
 
@@ -251,7 +255,8 @@ and behaviour under concurrent load. Those need a deployed environment (see
 | Document | Contents |
 |---|---|
 | [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md) | Step-by-step Supabase project, schema, storage buckets, connection strings |
-| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Render + Vercel deployment, environment variables, post-deploy checks |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Vercel (frontend) + Render (API) + Supabase (data), environment variables, post-deploy checks |
+| [`docs/FRONTEND.md`](docs/FRONTEND.md) | Every page: route, purpose, API calls, UI elements |
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model, what is protected, what is deliberately out of scope |
 | [`docs/API.md`](docs/API.md) | Endpoint reference with request/response examples |
 | [`docs/AUDIT_FIXES.md`](docs/AUDIT_FIXES.md) | Every finding from the independent review, and what was done about it |

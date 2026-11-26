@@ -2,10 +2,19 @@
 
 Two supported shapes. Pick one.
 
+Supabase is a **database + storage** service, not a Node host: it cannot run
+`server.js`. The Express API needs a Node runtime. So the pieces land like this:
+
+| Piece | Runs on | Why |
+|---|---|---|
+| Pages (`public/`) | **Vercel** | Static files on a CDN; free, fast, HTTPS, custom domain |
+| API (`server.js`) | **Render / Railway / Fly / a VPS** | Needs a long-lived Node process (connection pool, image processing) |
+| Postgres + images | **Supabase** | Managed database and object storage |
+
 | Shape | Frontend | API | Use when |
 |---|---|---|---|
 | **A — single service** (simplest) | Served by Express | Same Express process | You want one URL and no CORS |
-| **B — split** | Vercel | Render (or any Node host) | You want the frontend on Vercel's CDN |
+| **B — split** (what you asked for) | Vercel | Render (or any Node host) | Frontend on Vercel's CDN, API elsewhere |
 
 ---
 
@@ -55,9 +64,10 @@ Follow Shape A steps 1–7.
 
 ### Frontend on Vercel
 1. **Add New → Project** → import the same repository.
-2. Framework preset: **Other**. Root directory: `public`.
-   (If Vercel insists on a build step, set build command to `echo no build` and
-   output directory to `public`.)
+2. Framework preset: **Other**. Leave the root directory at the repository root —
+   the included `vercel.json` already sets `"outputDirectory": "public"`, plus the
+   security headers (CSP, HSTS, `Permissions-Policy: camera=(self)` so the
+   "Take photo" button is allowed) and clean URLs.
 3. Before deploying, edit `public/assets/config.js`:
 
 ```js
@@ -86,6 +96,46 @@ APP_URL=https://campusconnect.vercel.app
 > In Shape B the API's Content-Security-Policy does not apply to pages served by
 > Vercel. Vercel serves its own headers; if you need the same CSP there, add it in
 > `vercel.json`.
+
+### Storage buckets (Supabase)
+
+Run `db/supabase/storage_setup.sql` in the Supabase SQL Editor. It creates both
+buckets with the same size and MIME limits the API enforces:
+
+| Bucket | Public | Used for |
+|---|---|---|
+| `item-images` | yes | Gallery photos |
+| `claim-evidence` | **no** | Ownership proof on claims — signed URLs only |
+
+Or create them by hand in **Storage → New bucket**, with exactly those names and
+public/private settings, and a 5 MB limit with `image/webp, image/jpeg,
+image/png` allowed.
+
+### Creating the administrator
+
+There is no public admin signup. Pick one of these:
+
+**Option 1 — the script (recommended: it validates the domain and writes an audit entry)**
+
+```bash
+DATABASE_URL='postgresql://…' \
+ADMIN_EMAIL='jaishubhakanth.m-29@scds.saiuniversity.edu.in' \
+ADMIN_NAME='Jai Shubhakanth Mangali' \
+ADMIN_PASSWORD='a-long-password-with-a-number' \
+npm run create-admin
+```
+
+**Option 2 — SQL Editor only (no local checkout)**
+
+```bash
+node scripts/hash-password.js     # prints a bcrypt hash + the ready-made SQL
+```
+
+Paste the output into the Supabase SQL Editor.
+
+Either way the administrator still receives an email OTP on every sign-in, and
+the email must be on an allowed domain: `saiuniversity.edu.in` covers
+`scds.saiuniversity.edu.in` because sub-domains are matched automatically.
 
 ---
 
