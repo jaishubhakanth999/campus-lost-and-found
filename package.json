@@ -1,7 +1,7 @@
 {
   "name": "campusconnect",
   "version": "2.0.0",
-  "description": "CampusConnect — Sai University campus lost & found portal (PostgreSQL/Supabase, email OTP auth)",
+  "description": "CampusConnect \u2014 Sai University campus lost & found portal (PostgreSQL/Supabase, email OTP auth)",
   "main": "server.js",
   "engines": {
     "node": ">=20"
@@ -11,8 +11,8 @@
     "dev": "nodemon server.js",
     "migrate": "node scripts/migrate.js",
     "create-admin": "node scripts/create-admin.js",
-    "test": "node --test --test-concurrency=1 tests/",
-    "test:verbose": "node --test --test-reporter=spec tests/",
+    "test": "node scripts/run-tests.js",
+    "test:verbose": "node scripts/run-tests.js",
     "audit": "npm audit --omit=dev"
   },
   "dependencies": {

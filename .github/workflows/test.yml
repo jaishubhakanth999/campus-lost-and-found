@@ -48,6 +48,8 @@ jobs:
       - name: Run the test suite
         # The suite starts a real PostgreSQL server (PGlite, WebAssembly) over TCP,
         # applies the migrations and drives the HTTP API. No external services.
+        # scripts/run-tests.js passes explicit file paths, which behaves the same
+        # on Node 20 and 22 (node --test tests/ breaks on 22).
         run: npm test
 
       - name: Dependency audit (informational)
