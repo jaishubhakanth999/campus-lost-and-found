@@ -165,6 +165,7 @@
     sessions: { title: 'Login history', sub: 'Sign-ins, sign-outs and session status', render: renderSessions },
     events: { title: 'Security events', sub: 'Failed logins, OTP outcomes, suspensions', render: renderEvents },
     audit: { title: 'Audit log', sub: 'Every privileged action, with actor and time', render: renderAudit },
+    security: { title: 'Security', sub: 'Your administrator password and active sessions', render: renderSecurity },
   };
 
   async function show(section, page) {
@@ -483,6 +484,84 @@
         : '<tr><td colspan="5" class="center muted">No privileged actions recorded yet.</td></tr>') +
       '</tbody></table></div>' +
       pager({ page: current, pages, total }, (p) => show('audit', p));
+  }
+
+  /* -------------------------------- security ------------------------------- */
+
+  async function renderSecurity() {
+    panel.innerHTML =
+      '<div class="card" style="max-width:560px;">' +
+        '<h2 style="font-size:1.05rem;">Change your password</h2>' +
+        '<p class="muted" style="font-size:.9rem;">Use at least 12 characters with a letter and a number. Every other session is signed out when you change it.</p>' +
+        '<div class="form-alert error" id="secAlert" hidden></div>' +
+        '<div class="form-alert success" id="secInfo" hidden></div>' +
+        '<form id="secForm">' +
+          '<div class="field"><label for="secCurrent">Current password</label>' +
+            '<input id="secCurrent" name="currentPassword" type="password" required autocomplete="current-password"></div>' +
+          '<div class="field"><label for="secNew">New password</label>' +
+            '<input id="secNew" name="newPassword" type="password" required minlength="12" autocomplete="new-password">' +
+            '<span class="hint">At least 12 characters, including a letter and a number.</span></div>' +
+          '<button class="btn btn-primary" type="submit" id="secSubmit">Update password</button>' +
+        '</form>' +
+      '</div>' +
+      '<div class="card" style="max-width:560px;margin-top:1rem;">' +
+        '<h2 style="font-size:1.05rem;">Your sessions</h2>' +
+        '<p class="muted" style="font-size:.9rem;">Sign-ins for your own account. Revoke anything you do not recognise.</p>' +
+        '<div id="secSessions"><div class="skeleton" style="height:80px;"></div></div>' +
+      '</div>';
+
+    const form = document.getElementById('secForm');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = document.getElementById('secSubmit');
+      const alertBox = document.getElementById('secAlert');
+      const info = document.getElementById('secInfo');
+      setAlert(alertBox, '');
+      setAlert(info, '');
+
+      const currentPassword = form.elements.currentPassword.value;
+      const newPassword = form.elements.newPassword.value;
+      if (newPassword.length < 12) {
+        setAlert(alertBox, 'Use at least 12 characters.');
+        return;
+      }
+
+      busy(button, true, 'Updating…');
+      try {
+        const res = await api('/api/auth/change-password', {
+          method: 'POST',
+          body: { currentPassword, newPassword },
+        });
+        setAlert(
+          info,
+          'Password updated. ' + res.otherSessionsRevoked + ' other session(s) were signed out.',
+          'success'
+        );
+        form.reset();
+      } catch (err) {
+        setAlert(alertBox, err.message);
+      } finally {
+        busy(button, false);
+      }
+    });
+
+    try {
+      const { sessions, currentSessionId } = await api('/api/auth/sessions');
+      document.getElementById('secSessions').innerHTML =
+        '<div class="table-wrap"><table><thead><tr><th>Signed in</th><th>Status</th><th>Last active</th></tr></thead><tbody>' +
+        sessions
+          .slice(0, 10)
+          .map(
+            (s) =>
+              '<tr><td><small>' + formatDateTime(s.login_at) + '</small></td>' +
+              '<td>' + pill(s.status) + (s.session_id === currentSessionId ? ' <small class="muted">this device</small>' : '') + '</td>' +
+              '<td><small>' + timeAgo(s.last_activity_at) + '</small></td></tr>'
+          )
+          .join('') +
+        '</tbody></table></div>';
+    } catch (err) {
+      document.getElementById('secSessions').textContent = 'Could not load sessions: ' + err.message;
+    }
   }
 
   /* --------------------------------- boot ---------------------------------- */

@@ -60,10 +60,10 @@ services:
         value: "12"
 
       # --- university email restriction ------------------------------------
-      # CONFIRM the official domain before going live. The parent domain also
-      # covers sub-domains such as scds.saiuniversity.edu.in.
+      # Confirmed with the university. The parent domain covers sub-domains such
+      # as scds.saiuniversity.edu.in automatically.
       - key: ALLOWED_EMAIL_DOMAINS
-        sync: false
+        value: saiuniversity.edu.in
       - key: REQUIRE_EMAIL_DOMAIN
         value: "true"
 

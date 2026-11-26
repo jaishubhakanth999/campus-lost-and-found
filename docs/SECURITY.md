@@ -70,6 +70,9 @@ Written to be read by whoever runs this platform, not just by developers.
 - Expired sessions are marked `expired` lazily on access and by a sweep every ten
   minutes, so a closed browser never produces a fake logout timestamp.
 - Changing a password revokes every other session for that account.
+- Administrators rotate their own password from **/admin/ → Security**, which is
+  the only place an administrator can do it (the student dashboard is closed to
+  admin accounts by design).
 
 ## 4. Authorisation
 

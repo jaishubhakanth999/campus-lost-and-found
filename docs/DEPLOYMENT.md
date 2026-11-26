@@ -54,7 +54,9 @@ service, so you do not have to remember any setting.
 Render's **free plan has no shell**. Two ways around it:
 
 - **SQL Editor (works on every plan):** run `node scripts/hash-password.js`
-  locally, then paste the SQL it prints into the Supabase SQL Editor.
+  locally, then paste the SQL it prints into the Supabase SQL Editor. A ready
+  template with the administrator's email already filled in lives at
+  `db/supabase/create_admin.sql` — replace `PASTE_BCRYPT_HASH_HERE` and run it.
 - **Render Shell (paid plans):** `ADMIN_EMAIL=… ADMIN_PASSWORD=… npm run create-admin`.
 - **One-off Job (paid plans):** create a Job from the same repository with
   command `npm run create-admin` and the admin variables added to its environment.
@@ -154,6 +156,9 @@ Paste the output into the Supabase SQL Editor.
 Either way the administrator still receives an email OTP on every sign-in, and
 the email must be on an allowed domain: `saiuniversity.edu.in` covers
 `scds.saiuniversity.edu.in` because sub-domains are matched automatically.
+
+After the first sign-in, rotate the password from **/admin/ → Security**. That
+also signs out every other administrator session.
 
 ---
 

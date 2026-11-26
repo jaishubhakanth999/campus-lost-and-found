@@ -102,9 +102,8 @@ DATABASE_SSL=true
 JWT_SECRET=$(openssl rand -hex 32)
 OTP_PEPPER=$(openssl rand -hex 32)
 
-# CONFIRM the official domain before enabling restrictions in production.
-# Sub-domains are matched automatically.
-ALLOWED_EMAIL_DOMAINS=your-university.edu.in
+# Confirmed with the university. Sub-domains (e.g. scds.) are matched too.
+ALLOWED_EMAIL_DOMAINS=saiuniversity.edu.in
 
 # Development email: writes the OTP email to tmp/mail-outbox/*.html
 MAIL_TRANSPORT=file
@@ -285,6 +284,7 @@ headless DOM):
   your project's keys)
 - behaviour under concurrent load, and anything about your production domain
 
-The university email domain is intentionally **not** hard-coded. Confirm the
-official domain with Sai University, then set `ALLOWED_EMAIL_DOMAINS` before
-opening registration to students.
+The university email domain is `saiuniversity.edu.in` (confirmed), which also
+covers sub-domains such as `scds.saiuniversity.edu.in`. It lives in
+`ALLOWED_EMAIL_DOMAINS` — keep it configurable rather than hard-coding it in code,
+so a second campus can be added later.

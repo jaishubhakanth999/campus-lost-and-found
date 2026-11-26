@@ -428,6 +428,49 @@ test('the admin console blocks a student and never renders admin data', async ()
   assert.equal(calls.filter((c) => c.url.startsWith('/api/admin')).length, 0);
 });
 
+test('the admin console can change the administrator password', async () => {
+  const { window, calls } = loadPage('admin/index.html', {
+    role: 'admin',
+    table: {
+      '/api/auth/change-password': { ok: true, updated: true, otherSessionsRevoked: 1 },
+    },
+  });
+  await tick();
+
+  window.document.querySelector('.admin-side [data-section="security"]').click();
+  await tick();
+
+  const form = window.document.getElementById('secForm');
+  assert.ok(form, 'the security section rendered');
+
+  form.elements.currentPassword.value = 'OldPassword123';
+  form.elements.newPassword.value = 'NewPassword12345';
+  form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+
+  const call = calls.find((c) => c.url === '/api/auth/change-password');
+  assert.ok(call, 'change-password was called');
+  assert.equal(JSON.parse(call.body).newPassword, 'NewPassword12345');
+  assert.equal(window.document.getElementById('secInfo').hidden, false);
+});
+
+test('the admin console refuses a short new password before calling the API', async () => {
+  const { window, calls } = loadPage('admin/index.html', { role: 'admin' });
+  await tick();
+
+  window.document.querySelector('.admin-side [data-section="security"]').click();
+  await tick();
+
+  const form = window.document.getElementById('secForm');
+  form.elements.currentPassword.value = 'OldPassword123';
+  form.elements.newPassword.value = 'short';
+  form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+
+  assert.equal(window.document.getElementById('secAlert').hidden, false);
+  assert.equal(calls.filter((c) => c.url === '/api/auth/change-password').length, 0);
+});
+
 test('the admin console signs an administrator in through the OTP step', async () => {
   const { window, calls } = loadPage('admin/index.html', {
     table: {
