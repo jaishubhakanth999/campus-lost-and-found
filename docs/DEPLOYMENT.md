@@ -30,6 +30,29 @@ service, so you do not have to remember any setting.
 which nothing here has been tested against (native modules: sharp, pg). Both
 Node 20 and 22 are exercised by CI on every push; 22 is the recommended target.
 
+### If the deploy says `tenant/user <ref> not found`
+
+The pooler identifies your project by the **host** it is reached on, so the wrong
+cluster answers "tenant/user not found" even when the ref is correct. Run the
+probe from your machine — it tries every candidate and prints the one that works:
+
+```bash
+node scripts/check-db.js 'postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres'
+```
+
+```
+127.0.0.1:49546                            ✓ connected in 57 ms
+aws-1-ap-south-1.pooler.supabase.com:5432  ✗ timeout expired
+aws-0-ap-south-1.pooler.supabase.com:5432  ✗ tenant/user ... not found
+
+USE THIS AS DATABASE_URL:
+postgresql://postgres.<ref>:<PASSWORD>@aws-1-ap-south-1.pooler.supabase.com:5432/postgres
+```
+
+It distinguishes the three failure modes: *tenant/user not found* (wrong host or
+paused project), *password authentication failed* (wrong password) and *timeout*
+(no route — usually the IPv6-only direct host).
+
 ### Environment variables
 
 `render.env.example` in the repository root is a paste-ready block for Render's
