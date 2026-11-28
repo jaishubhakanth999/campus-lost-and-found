@@ -206,6 +206,8 @@ with Supertest, and loads every page in a headless DOM to submit its forms.
   re-decision rejection, withdrawal, handover, completion
 - admin access control (401/403 on every admin route), moderation, audit trail
 - JWT tampering, `alg:none`, wrong secret, security headers, CORS
+- password strength meter on every password field, scored by the same function the
+  server enforces (students: fair, administrators: strong)
 - password reset: link emailed, hash-only storage, single use, expiry, session revocation
 - listing housekeeping: expiry dates, auto-close, one-time owner warning
 - front-end wiring: every page boots, every form submits the right payload

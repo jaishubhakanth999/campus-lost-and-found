@@ -49,7 +49,7 @@ One page, three panels, because the flow is a single conversation.
 |---|---|
 | **Route** | `/auth` |
 | **API** | `POST /api/auth/register` → `POST /api/auth/verify-otp` · `POST /api/auth/login` → `POST /api/auth/verify-otp` · `POST /api/auth/resend-otp` · `POST /api/auth/logout` |
-| **UI** | sign-in panel · registration panel (name, university email, password with hint) · six-box OTP panel with auto-advance, paste support, arrow-key navigation, resend countdown, "use a different email" · inline field errors · success/error banners · link to the admin portal and to password reset |
+| **UI** | sign-in panel · registration panel (name, university email, password with a live strength meter) · six-box OTP panel with auto-advance, paste support, arrow-key navigation, resend countdown, "use a different email" · inline field errors · success/error banners · link to the admin portal and to password reset |
 | **Notes** | No token is stored until the OTP is verified. `?next=` returns the visitor to the page they were on. |
 
 ## reset.html — password reset
