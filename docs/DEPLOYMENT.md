@@ -56,7 +56,10 @@ Render's **free plan has no shell**. Two ways around it:
 - **SQL Editor (works on every plan):** run `node scripts/hash-password.js`
   locally, then paste the SQL it prints into the Supabase SQL Editor. A ready
   template with the administrator's email already filled in lives at
-  `db/supabase/create_admin.sql` — replace `PASTE_BCRYPT_HASH_HERE` and run it.
+  `db/supabase/create_admin.sql` — replace the hash placeholder and run it. If
+  you forget, Postgres refuses the insert: the `users_password_hash_bcrypt`
+  constraint only accepts a real bcrypt digest, so an unusable administrator
+  cannot be created by accident.
 - **Render Shell (paid plans):** `ADMIN_EMAIL=… ADMIN_PASSWORD=… npm run create-admin`.
 - **One-off Job (paid plans):** create a Job from the same repository with
   command `npm run create-admin` and the admin variables added to its environment.

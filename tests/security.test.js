@@ -109,6 +109,18 @@ test('oversized JSON bodies are rejected', async () => {
   assert.equal(res.status, 413);
 });
 
+test('the schema refuses a password hash that is not a bcrypt digest', async () => {
+  const { query } = require('../src/db/pool');
+  await assert.rejects(
+    () =>
+      query(
+        `insert into users (name, email, password_hash) values ('Plain Text', 'plain@saiuniversity.edu.in', 'plaintext')`
+      ),
+    (err) => err.code === '23514',
+    'the users_password_hash_bcrypt constraint must reject a non-bcrypt hash'
+  );
+});
+
 test('production refuses a non-https APP_URL', () => {
   const { buildConfig } = require('../src/config/env');
   const base = {
