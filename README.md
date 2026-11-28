@@ -258,6 +258,7 @@ and behaviour under concurrent load. Those need a deployed environment (see
 | [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md) | Step-by-step Supabase project, schema, storage buckets, connection strings |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Vercel (frontend) + Render (API) + Supabase (data), environment variables, post-deploy checks |
 | `render.yaml` | Render Blueprint — deploys the API with build/start commands, health check and env vars |
+| `public/vercel.json` | Vercel config for the **frontend folder** — set Root Directory to `public` when importing the repo |
 | [`docs/FRONTEND.md`](docs/FRONTEND.md) | Every page: route, purpose, API calls, UI elements |
 | [`docs/architecture.html`](docs/architecture.html) | Five diagrams: what runs where, one request step by step, sign-in, item/claim states, the data model |
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model, what is protected, what is deliberately out of scope |

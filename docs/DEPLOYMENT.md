@@ -86,12 +86,39 @@ Follow Shape A above. Note that `APP_URL` must be the **Vercel** URL, not the
 Render one — the emails are built from it.
 
 ### Frontend on Vercel
-1. **Add New → Project** → import the same repository.
-2. Framework preset: **Other**. Leave the root directory at the repository root —
-   the included `vercel.json` already sets `"outputDirectory": "public"`, plus the
-   security headers (CSP, HSTS, `Permissions-Policy: camera=(self)` so the
-   "Take photo" button is allowed) and clean URLs.
-3. Before deploying, edit `public/assets/config.js`:
+
+**Set Root Directory to `public`.** That single setting is the difference
+between a deploy and the error below.
+
+```
+Error: [BUILD_FAILED] No entrypoint found in output directory: "public".
+Searched for: app.{js,cjs,mjs}, index.{js,cjs,mjs}, server.{js,cjs,mjs} …
+```
+
+Why it happens: the repository root contains `package.json`, `server.js` and
+`express`, so Vercel classifies the project as a **Node backend**. It installs all
+of the API's dependencies and then looks for a serverless function entrypoint
+*inside* the output directory — which a folder of `.html` files cannot provide.
+Pointing the project at `public/` removes the ambiguity: Vercel sees a folder of
+static files, installs nothing and runs no build.
+
+1. **Add New → Project** → import this repository.
+2. **Root Directory → Edit → `public`**.
+3. Framework Preset: **Other**. Build Command: **empty**. Output Directory:
+   **empty**. Install Command: **empty** (there is nothing to install).
+4. Deploy.
+
+`public/vercel.json` travels with the folder and supplies clean URLs, the
+`/admin` rewrite and the security headers (CSP, HSTS and
+`Permissions-Policy: camera=(self)`, which the "Take photo" button needs).
+
+Deploying the standalone `campusconnect-frontend.zip` instead works too — it has
+no `package.json`, so Vercel treats it as static with no settings to change.
+
+**Do not** leave Root Directory at the repository root: that is exactly the
+configuration that produces the error above.
+
+5. Before deploying, edit `public/assets/config.js`:
 
 ```js
 window.CAMPUS_CONFIG = {
