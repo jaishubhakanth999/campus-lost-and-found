@@ -25,7 +25,7 @@ const TABLE = [
   ['aaaaaaaa', 0, 'one repeated character'],
   ['qwertyuiop', 0, 'a keyboard run'],
   ['letmein!2024', 0, 'common word plus a year'],
-  ['CampusLife#2026', 0, 'contains the campus name with a 3-digit tail'],
+  ['Campus123', 0, 'contains the campus name with a 3-digit tail'],
   ['abc123xyz', 1, 'short, contains a common base'],
   ['CampusLife#2026', 2, 'long, mixed, but contains a common word'],
   ['Kanth@123', 3, 'nine characters, three classes, no pattern'],
@@ -44,11 +44,11 @@ test('the scorer rates weak, fair, strong and very strong correctly', () => {
 
 test('everything a student would try first is refused', () => {
   for (const pw of ['password', 'password123', 'qwerty123', 'aaaaaaaa', '12345678',
-                    'letmein!2024', 'CampusLife#2026', 'abc123xyz', 'iloveyou123']) {
+                    'letmein!2024', 'Campus123', 'abc123xyz', 'iloveyou123']) {
     assert.equal(meetsPolicy(pw, 'student').ok, false, `"${pw}" must be refused`);
   }
   // and the same list is refused for an administrator
-  for (const pw of ['password', 'CampusLife#2026', 'abc123xyz']) {
+  for (const pw of ['password', 'Campus123', 'abc123xyz']) {
     assert.equal(meetsPolicy(pw, 'admin').ok, false, `"${pw}" must be refused for admins`);
   }
 });
@@ -81,7 +81,7 @@ function browserScorer() {
 
 test('the browser meter and the server agree on accept/reject, not just the score', () => {
   const client = browserScorer();
-  const samples = ['password', 'CampusLife#2026', 'Kanth@123', 'Ab1!efg', 'Ab1!efgh', 'Ab1!efghijkl',
+  const samples = ['password', 'Campus123', 'Kanth@123', 'Ab1!efg', 'Ab1!efgh', 'Ab1!efghijkl',
     'CampusLife#2026', 'vzpzh5g3?+8s66L*b&bd', 'AdminPass1234', 'correct horse battery staple'];
   for (const pw of samples) {
     for (const role of ['student', 'admin']) {
