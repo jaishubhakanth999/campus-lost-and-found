@@ -1,7 +1,8 @@
 'use strict';
 
 const router = require('express').Router();
-const { asyncHandler } = require('../lib/errors');
+const { asyncHandler, badRequest } = require('../lib/errors');
+const { meetsPolicy } = require('../lib/passwordStrength');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
 const { limiters } = require('../middleware/rateLimits');
@@ -150,6 +151,11 @@ router.post(
   authenticate,
   validate({ body: v.changePassword }),
   asyncHandler(async (req, res) => {
+    // The schema enforces the student floor; an administrator must clear a
+    // higher one, so the role decides which floor applies.
+    const policy = meetsPolicy(req.validated.body.newPassword, req.user.role === 'admin' ? 'admin' : 'student');
+    if (!policy.ok) throw badRequest(policy.message);
+
     const result = await authService.changePassword(req.user.id, {
       ...req.validated.body,
       keepSessionRowId: req.session.rowId,

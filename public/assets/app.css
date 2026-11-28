@@ -180,6 +180,11 @@ textarea { min-height: 110px; resize: vertical; }
 .pill.pending { background: var(--warn-tint); color: var(--warn); }
 .pill.approved, .pill.completed, .pill.active { background: var(--green-tint); color: var(--green-dark); }
 .pill.suspended, .pill.expired, .pill.revoked, .pill.logged_out { background: #f1f2ee; color: var(--muted); }
+.pill.role-admin { background: var(--green); color: #fff; }
+.pill.role-student { background: #eef2ff; color: #3b4b8a; }
+.pill.success { background: var(--green-tint); color: var(--green-dark); }
+.pill.failure { background: var(--warn-tint); color: var(--warn); }
+.pill.blocked { background: var(--danger-tint); color: var(--danger); }
 
 /* -------------------------------- galleries ------------------------------- */
 
@@ -198,9 +203,15 @@ textarea { min-height: 110px; resize: vertical; }
 .item-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); margin-top: auto; }
 .item-cta { padding: 0 1rem 1rem; }
 
-.filters { display: grid; gap: 0.75rem; grid-template-columns: 2fr 1fr 1fr 1fr auto; align-items: end; }
-@media (max-width: 900px) { .filters { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 560px) { .filters { grid-template-columns: 1fr; } }
+.filters {
+  display: grid; gap: 0.75rem 0.9rem; align-items: end;
+  /* minmax(0, …) stops a long placeholder from forcing a column wider than its share */
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+.filters .btn { height: 44px; }
+@media (max-width: 1000px) { .filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); } .filters .btn { grid-column: 1 / -1; } }
+@media (max-width: 700px) { .filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 520px) { .filters { grid-template-columns: 1fr; } }
 
 .tabs { display: flex; gap: 0.35rem; border-bottom: 1px solid var(--line); margin-bottom: 1.25rem; overflow-x: auto; }
 .tabs button {
@@ -337,3 +348,22 @@ body.admin { background: #f4f6f2; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+
+/* password strength meter -------------------------------------------------- */
+.pw-meter { margin-top: 8px; }
+.pw-meter-track { height: 6px; border-radius: 99px; background: #e8ece6; overflow: hidden; }
+.pw-meter-fill { display: block; height: 100%; width: 20%; border-radius: 99px;
+                 background: #b4453c; transition: width .18s ease, background .18s ease; }
+.pw-meter[data-score="0"] .pw-meter-fill { width: 20%; background: #b4453c; }
+.pw-meter[data-score="1"] .pw-meter-fill { width: 40%; background: #c9772b; }
+.pw-meter[data-score="2"] .pw-meter-fill { width: 60%; background: #b7952f; }
+.pw-meter[data-score="3"] .pw-meter-fill { width: 80%; background: #4f8a4a; }
+.pw-meter[data-score="4"] .pw-meter-fill { width: 100%; background: var(--green); }
+.pw-meter-line { display: flex; justify-content: space-between; gap: 10px;
+                 font-size: 11.5px; margin-top: 5px; min-height: 15px; }
+.pw-meter-label { font-weight: 700; color: var(--muted); }
+.pw-meter-need { color: var(--muted); }
+.pw-meter-need.bad { color: #b4453c; font-weight: 600; }
+.pw-meter-need.good { color: var(--green-dark); font-weight: 600; }
+.pw-meter-hints { margin: 6px 0 0; padding-left: 18px; font-size: 11.5px; color: var(--muted); }
+.pw-meter-hints li { margin: 1px 0; }

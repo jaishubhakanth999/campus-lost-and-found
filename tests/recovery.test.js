@@ -111,7 +111,7 @@ test('resetting the password changes it, signs sessions out and burns the link',
   // The old password no longer works, the new one does.
   const oldLogin = await request(app)
     .post('/api/auth/login')
-    .send({ email: 'reset3@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ email: 'reset3@saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(oldLogin.status, 401);
 
   const newLogin = await request(app)

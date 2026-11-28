@@ -231,11 +231,16 @@ async function listItems({ search = '', type = null, status = null, moderation =
 }
 
 async function moderateItem({ id, actor, action, note = null, ip = null }) {
+  // Moderation owns visibility; it must not overwrite the lifecycle. Hiding a
+  // listing therefore leaves `status` untouched, so restoring a returned item
+  // brings back a returned item rather than resurrecting it as 'open' (F7).
+  // `status: null` = leave it alone. Restore additionally un-removes a listing
+  // that the owner had deleted (status 'removed').
   const map = {
-    approve: { moderation_status: 'approved', status: null },
+    approve: { moderation_status: 'approved', status: 'unremove' },
     reject: { moderation_status: 'rejected', status: null },
-    remove: { moderation_status: 'rejected', status: 'removed' },
-    restore: { moderation_status: 'approved', status: 'open' },
+    remove: { moderation_status: 'rejected', status: null },
+    restore: { moderation_status: 'approved', status: 'unremove' },
   };
   if (!map[action]) throw badRequest('Unknown moderation action');
 
@@ -245,7 +250,15 @@ async function moderateItem({ id, actor, action, note = null, ip = null }) {
 
   await withTransaction(async (client) => {
     const target = map[action];
-    if (target.status) {
+    if (target.status === 'unremove') {
+      await client.query(
+        `update items
+            set moderation_status = $2,
+                status = case when status = 'removed' then 'open' else status end
+          where id = $1`,
+        [id, target.moderation_status]
+      );
+    } else if (target.status) {
       await client.query(`update items set moderation_status = $2, status = $3 where id = $1`, [
         id,
         target.moderation_status,
@@ -257,12 +270,14 @@ async function moderateItem({ id, actor, action, note = null, ip = null }) {
         target.moderation_status,
       ]);
     }
-    if (action === 'remove') {
+    if (action === 'remove' || action === 'reject') {
+      // F5: a hidden listing must not keep live claims — the owner could still
+      // approve one and promise an item that is not publicly visible.
       await client.query(
-        `update claims set status = 'rejected',
-                decision_note = coalesce(decision_note, 'Listing removed by a moderator')
+        `update claims set status = 'rejected', decided_at = coalesce(decided_at, now()),
+                decision_note = coalesce(decision_note, $2)
           where item_id = $1 and status = 'pending'`,
-        [id]
+        [id, action === 'remove' ? 'Listing removed by a moderator' : 'Listing rejected by a moderator']
       );
     }
     await audit.record(

@@ -122,6 +122,14 @@ const schema = z
         }
       }
     }
+    if (v.NODE_ENV === 'production' && !/^https:\/\//i.test(v.APP_URL)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['APP_URL'],
+        message:
+          'APP_URL must be an https URL in production — email links and the CSP are built from it',
+      });
+    }
     if (v.NODE_ENV === 'production' && v.JWT_SECRET.startsWith('dev-')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

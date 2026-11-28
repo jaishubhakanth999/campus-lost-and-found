@@ -206,7 +206,12 @@
     root.querySelectorAll('[data-decide]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const decision = btn.dataset.decide;
-        const note = decision === 'rejected' ? prompt('Optional: tell the claimant why (they will see this).') || '' : '';
+        let note = '';
+        if (decision === 'rejected') {
+          const answer = prompt('Optional: tell the claimant why (they will see this).');
+          if (answer === null) return; // cancelled — do not reject
+          note = answer;
+        }
         if (decision === 'approved' && !confirm('Approve this claim? Other pending claims will be rejected and the item will be marked as claimed.')) return;
         try {
           await api('/api/claims/' + btn.dataset.claim + '/decision', {

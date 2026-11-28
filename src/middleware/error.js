@@ -65,6 +65,24 @@ function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-va
       .json({ error: { code: 'unauthorized', message: 'Please sign in again' } });
   }
 
+  // Database connection trouble is temporary, not a bug in the request: answer
+  // 503 with a retryable code instead of a generic 500, so the client knows to
+  // try again rather than reporting "something went wrong".
+  if (
+    err &&
+    /Connection terminated|timeout exceeded when trying to connect|ECONNREFUSED|ETIMEDOUT|terminating connection|server closed the connection/i.test(
+      String(err.message || '')
+    )
+  ) {
+    logger.error('database unavailable', { message: err.message, path: req.originalUrl });
+    return res.status(503).json({
+      error: {
+        code: 'database_unavailable',
+        message: 'The service is busy right now. Please try again in a moment.',
+      },
+    });
+  }
+
   if (err instanceof AppError || (err && err.status && err.expose)) {
     const body = { error: { code: err.code || 'error', message: err.message } };
     if (err.fields) body.error.fields = err.fields;

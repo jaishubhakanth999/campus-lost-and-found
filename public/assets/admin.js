@@ -165,6 +165,7 @@
     sessions: { title: 'Login history', sub: 'Sign-ins, sign-outs and session status', render: renderSessions },
     events: { title: 'Security events', sub: 'Failed logins, OTP outcomes, suspensions', render: renderEvents },
     audit: { title: 'Audit log', sub: 'Every privileged action, with actor and time', render: renderAudit },
+    security: { title: 'Security', sub: 'Your administrator password and active sessions', render: renderSecurity },
   };
 
   async function show(section, page) {
@@ -178,6 +179,13 @@
     panel.innerHTML = '<div class="skeleton" style="height:180px;"></div>';
     try {
       await sections[section].render(state.page);
+
+      // Pager buttons exist only after the render above, so bind them here.
+      panel.querySelectorAll('.pager [data-page]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (!btn.disabled) show(section, Number(btn.dataset.page));
+        });
+      });
     } catch (err) {
       panel.innerHTML =
         '<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load this section</h3>' +
@@ -191,18 +199,20 @@
     btn.addEventListener('click', () => show(btn.dataset.section))
   );
 
-  function pager(data, onGo) {
+  /**
+   * Pagination markup only. The click handlers are attached by show() *after*
+   * the markup is inserted — building a detached node, adding listeners and
+   * then serialising it with outerHTML silently threw the listeners away.
+   */
+  function pager(data) {
     if (!data || data.pages <= 1) return '';
-    const wrap = document.createElement('div');
-    wrap.className = 'pager';
-    wrap.innerHTML =
-      '<button class="btn btn-ghost btn-sm" data-page="' + (data.page - 1) + '"' + (data.page > 1 ? '' : ' disabled') + '>← Previous</button>' +
-      '<span class="muted">Page ' + data.page + ' of ' + data.pages + ' · ' + data.total + ' total</span>' +
-      '<button class="btn btn-ghost btn-sm" data-page="' + (data.page + 1) + '"' + (data.page < data.pages ? '' : ' disabled') + '>Next →</button>';
-    wrap.querySelectorAll('[data-page]').forEach((btn) =>
-      btn.addEventListener('click', () => onGo(Number(btn.dataset.page)))
+    return (
+      '<div class="pager">' +
+        '<button class="btn btn-ghost btn-sm" data-page="' + (data.page - 1) + '"' + (data.page > 1 ? '' : ' disabled') + '>← Previous</button>' +
+        '<span class="muted">Page ' + data.page + ' of ' + data.pages + ' · ' + data.total + ' total</span>' +
+        '<button class="btn btn-ghost btn-sm" data-page="' + (data.page + 1) + '"' + (data.page < data.pages ? '' : ' disabled') + '>Next →</button>' +
+      '</div>'
     );
-    return wrap.outerHTML;
   }
 
   /* -------------------------------- overview -------------------------------- */
@@ -257,8 +267,8 @@
             '<tr>' +
               '<td>' + escapeHtml(u.name) + (u.report_count ? '<br><small class="muted">' + u.report_count + ' report(s)</small>' : '') + '</td>' +
               '<td>' + escapeHtml(u.email) + '</td>' +
-              '<td>' + pill(u.role === 'admin' ? 'approved' : 'closed').replace('approved', 'admin').replace('closed', 'student') + '</td>' +
-              '<td>' + (u.is_email_verified ? '✅' : '—') + '</td>' +
+              '<td>' + pill(u.role === 'admin' ? 'role-admin' : 'role-student', u.role) + '</td>' +
+              '<td>' + (u.is_email_verified ? pill('success', 'verified') : pill('failure', 'unverified')) + '</td>' +
               '<td>' + pill(u.status) + '</td>' +
               '<td><small>' + formatDate(u.created_at) + '</small></td>' +
               '<td><small>' + (u.last_login_at ? timeAgo(u.last_login_at) : 'never') + '</small></td>' +
@@ -272,7 +282,7 @@
           ).join('')
         : '<tr><td colspan="8" class="center muted">No accounts match that search.</td></tr>') +
       '</tbody></table></div>' +
-      pager({ page: current, pages, total }, (p) => show('users', p));
+      pager({ page: current, pages, total });
 
     const doSearch = () => {
       state.query.userSearch = document.getElementById('userSearch').value.trim();
@@ -324,14 +334,15 @@
               '<td>' + i.claim_count + '</td>' +
               '<td><small>' + formatDate(i.created_at) + '</small></td>' +
               '<td class="row-actions">' +
-                (i.moderation_status !== 'approved' ? '<button class="btn btn-ghost btn-sm" data-moderate="approve" data-id="' + i.id + '">Approve</button>' : '') +
-                (i.status !== 'removed' ? '<button class="btn btn-danger btn-sm" data-moderate="remove" data-id="' + i.id + '">Remove</button>' : '<button class="btn btn-ghost btn-sm" data-moderate="restore" data-id="' + i.id + '">Restore</button>') +
+                (i.moderation_status !== 'approved'
+                  ? '<button class="btn btn-ghost btn-sm" data-moderate="restore" data-id="' + i.id + '">Restore</button>'
+                  : '<button class="btn btn-danger btn-sm" data-moderate="remove" data-id="' + i.id + '">Remove</button>') +
               '</td>' +
             '</tr>'
           ).join('')
         : '<tr><td colspan="8" class="center muted">No listings yet.</td></tr>') +
       '</tbody></table></div>' +
-      pager({ page: current, pages, total }, (p) => show('items', p));
+      pager({ page: current, pages, total });
 
     panel.querySelectorAll('[data-moderate]').forEach((b) =>
       b.addEventListener('click', async () => {
@@ -378,7 +389,7 @@
           ).join('')
         : '<tr><td colspan="6" class="center muted">No claims yet.</td></tr>') +
       '</tbody></table></div>' +
-      pager({ page: current, pages, total }, (p) => show('claims', p));
+      pager({ page: current, pages, total });
 
     panel.querySelectorAll('[data-decide]').forEach((b) =>
       b.addEventListener('click', async () => {
@@ -422,7 +433,7 @@
           ).join('')
         : '<tr><td colspan="8" class="center muted">No sessions recorded.</td></tr>') +
       '</tbody></table></div>' +
-      pager({ page: current, pages, total }, (p) => show('sessions', p));
+      pager({ page: current, pages, total });
 
     panel.querySelectorAll('[data-revoke]').forEach((b) =>
       b.addEventListener('click', async () => {
@@ -451,7 +462,7 @@
             '<tr>' +
               '<td><small>' + formatDateTime(e.created_at) + '</small></td>' +
               '<td><code style="font-size:.8rem;">' + escapeHtml(e.event) + '</code></td>' +
-              '<td>' + pill(e.outcome === 'success' ? 'approved' : e.outcome === 'blocked' ? 'rejected' : 'pending').replace('approved', 'success').replace('rejected', 'blocked').replace('pending', 'failure') + '</td>' +
+              '<td>' + pill(e.outcome, e.outcome) + '</td>' +
               '<td><small>' + escapeHtml(e.email || '—') + '</small></td>' +
               '<td><small>' + escapeHtml(e.reason || '—') + '</small></td>' +
               '<td><small>' + escapeHtml(e.ip || '—') + '</small></td>' +
@@ -459,7 +470,7 @@
           ).join('')
         : '<tr><td colspan="6" class="center muted">No events recorded.</td></tr>') +
       '</tbody></table></div>' +
-      pager({ page: current, pages, total }, (p) => show('events', p));
+      pager({ page: current, pages, total });
   }
 
   /* ---------------------------------- audit --------------------------------- */
@@ -482,7 +493,87 @@
           ).join('')
         : '<tr><td colspan="5" class="center muted">No privileged actions recorded yet.</td></tr>') +
       '</tbody></table></div>' +
-      pager({ page: current, pages, total }, (p) => show('audit', p));
+      pager({ page: current, pages, total });
+  }
+
+  /* -------------------------------- security ------------------------------- */
+
+  async function renderSecurity() {
+    panel.innerHTML =
+      '<div class="card" style="max-width:560px;">' +
+        '<h2 style="font-size:1.05rem;">Change your password</h2>' +
+        '<p class="muted" style="font-size:.9rem;">Use at least 12 characters with a letter and a number. Every other session is signed out when you change it.</p>' +
+        '<div class="form-alert error" id="secAlert" hidden></div>' +
+        '<div class="form-alert success" id="secInfo" hidden></div>' +
+        '<form id="secForm">' +
+          '<div class="field"><label for="secCurrent">Current password</label>' +
+            '<input id="secCurrent" name="currentPassword" type="password" required autocomplete="current-password"></div>' +
+          '<div class="field"><label for="secNew">New password</label>' +
+            '<input id="secNew" name="newPassword" type="password" required minlength="12" autocomplete="new-password">' +
+            '<span class="hint">Administrator passwords must be strong.</span></div>' +
+          '<button class="btn btn-primary" type="submit" id="secSubmit">Update password</button>' +
+        '</form>' +
+      '</div>' +
+      '<div class="card" style="max-width:560px;margin-top:1rem;">' +
+        '<h2 style="font-size:1.05rem;">Your sessions</h2>' +
+        '<p class="muted" style="font-size:.9rem;">Sign-ins for your own account. Revoke anything you do not recognise.</p>' +
+        '<div id="secSessions"><div class="skeleton" style="height:80px;"></div></div>' +
+      '</div>';
+
+    window.CC.attachPasswordMeter(document.getElementById('secNew'), { role: 'admin' });
+
+    const form = document.getElementById('secForm');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = document.getElementById('secSubmit');
+      const alertBox = document.getElementById('secAlert');
+      const info = document.getElementById('secInfo');
+      setAlert(alertBox, '');
+      setAlert(info, '');
+
+      const currentPassword = form.elements.currentPassword.value;
+      const newPassword = form.elements.newPassword.value;
+      if (newPassword.length < 12) {
+        setAlert(alertBox, 'Use at least 12 characters.');
+        return;
+      }
+
+      busy(button, true, 'Updating…');
+      try {
+        const res = await api('/api/auth/change-password', {
+          method: 'POST',
+          body: { currentPassword, newPassword },
+        });
+        setAlert(
+          info,
+          'Password updated. ' + res.otherSessionsRevoked + ' other session(s) were signed out.',
+          'success'
+        );
+        form.reset();
+      } catch (err) {
+        setAlert(alertBox, err.message);
+      } finally {
+        busy(button, false);
+      }
+    });
+
+    try {
+      const { sessions, currentSessionId } = await api('/api/auth/sessions');
+      document.getElementById('secSessions').innerHTML =
+        '<div class="table-wrap"><table><thead><tr><th>Signed in</th><th>Status</th><th>Last active</th></tr></thead><tbody>' +
+        sessions
+          .slice(0, 10)
+          .map(
+            (s) =>
+              '<tr><td><small>' + formatDateTime(s.login_at) + '</small></td>' +
+              '<td>' + pill(s.status) + (s.session_id === currentSessionId ? ' <small class="muted">this device</small>' : '') + '</td>' +
+              '<td><small>' + timeAgo(s.last_activity_at) + '</small></td></tr>'
+          )
+          .join('') +
+        '</tbody></table></div>';
+    } catch (err) {
+      document.getElementById('secSessions').textContent = 'Could not load sessions: ' + err.message;
+    }
   }
 
   /* --------------------------------- boot ---------------------------------- */

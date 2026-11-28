@@ -83,7 +83,13 @@
     const isJson = (response.headers.get('content-type') || '').includes('application/json');
     const payload = isJson ? await response.json().catch(() => ({})) : {};
 
-    if (response.status === 401 && !opts.allowUnauthorized) {
+    // A 401 from a sign-in endpoint means "wrong credentials", not "your session
+    // ended": reloading the page there would throw the error message away.
+    const isCredentialCall = /^\/api\/auth\/(login|register|verify-otp|admin\/login|reset-password|forgot-password)/.test(
+      String(path)
+    );
+
+    if (response.status === 401 && !opts.allowUnauthorized && !isCredentialCall) {
       session.clear();
       const inAdmin = location.pathname.indexOf('/admin/') !== -1;
       const next = encodeURIComponent(location.pathname + location.search);
@@ -99,7 +105,12 @@
     }
 
     if (!response.ok) {
-      throw new ApiError(response.status, payload.error || payload);
+      const error = payload.error || payload;
+      if (response.status === 503) {
+        error.message =
+          error.message || 'The service is busy right now. Please try again in a moment.';
+      }
+      throw new ApiError(response.status, error);
     }
     return payload;
   }
@@ -162,9 +173,13 @@
       .toUpperCase();
   }
 
-  function pill(status) {
-    const label = String(status || '').replace(/_/g, ' ');
-    return '<span class="pill ' + escapeHtml(status) + '">' + escapeHtml(label) + '</span>';
+  /**
+   * Badge. `status` picks the colour (a CSS class); `label` is what the reader
+   * sees, so a role or an outcome can be shown without inventing CSS classes.
+   */
+  function pill(status, label) {
+    const text = label || String(status || '').replace(/_/g, ' ');
+    return '<span class="pill ' + escapeHtml(status) + '">' + escapeHtml(text) + '</span>';
   }
 
   /* --------------------------------- toast -------------------------------- */
@@ -333,11 +348,143 @@
     initNavToggle();
   });
 
+
+  /* --------------------------- password strength --------------------------- */
+
+  /**
+   * Mirrors src/lib/passwordStrength.js. tests/password.test.js loads both and
+   * fails if they ever disagree, so this copy cannot drift silently.
+   */
+  const COMMON_PASSWORDS = [
+    'password', 'passw0rd', 'qwerty', 'qwertyuiop', 'azerty', 'letmein', 'welcome',
+    'iloveyou', 'admin', 'administrator', 'root', 'toor', 'abc123', 'abcd1234',
+    '123456', '1234567', '12345678', '123456789', '1234567890', '111111', '000000',
+    'monkey', 'dragon', 'sunshine', 'princess', 'football', 'cricket', 'india123',
+    'campus', 'campusconnect', 'student', 'college', 'university', 'saiuniversity',
+    'changeme', 'secret', 'master', 'superman', 'batman', 'trustno1', 'whatever',
+  ];
+  const RUNS = ['abcdefghijklmnopqrstuvwxyz', '01234567890', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+
+  function passwordStrength(value) {
+    const pw = String(value == null ? '' : value);
+    const hints = [];
+    const lower = pw.toLowerCase();
+    const has = {
+      lower: /[a-z]/.test(pw), upper: /[A-Z]/.test(pw),
+      digit: /[0-9]/.test(pw), symbol: /[^A-Za-z0-9]/.test(pw),
+    };
+    const variety = Object.keys(has).filter((k) => has[k]).length;
+
+    if (!pw) return { score: 0, label: 'Very weak', hints: ['Enter a password'] };
+
+    let run = /(.)\1\1/.test(pw);
+    if (!run) {
+      for (const seq of RUNS) {
+        for (let i = 0; i + 4 <= seq.length; i += 1) {
+          const chunk = seq.slice(i, i + 4);
+          if (lower.includes(chunk) || lower.includes(chunk.split('').reverse().join(''))) { run = true; break; }
+        }
+        if (run) break;
+      }
+    }
+    const lettersOnly = lower.replace(/[^a-z]/g, '');
+    const common = COMMON_PASSWORDS.some((w) => lower === w || lettersOnly === w);
+    const containsCommon = COMMON_PASSWORDS.some((w) => w.length >= 5 && lower.includes(w));
+    const digitsOnly = /^[0-9]+$/.test(pw);
+
+    let score;
+    if (pw.length < 8) score = 0;
+    else if (pw.length < 12) score = 1;
+    else if (pw.length < 16) score = 2;
+    else score = 3;
+
+    if (variety >= 3) score += 1;
+    if (variety === 4) score += 1;
+    if (common) score = Math.min(score, 0);
+    else if (containsCommon && pw.length < 16) score = Math.min(score, pw.length < 12 ? 1 : 2);
+    if (digitsOnly) score = Math.min(score, 0);
+    if (run) score -= 1;
+    if (pw.length >= 20) score += 1;
+    score = Math.max(0, Math.min(4, score));
+
+    if (pw.length < 8) hints.push('Use at least 8 characters');
+    else if (pw.length < 12) hints.push('Longer is stronger — 12 or more characters');
+    if (variety < 3) hints.push('Mix upper case, lower case and numbers');
+    if (!has.symbol) hints.push('A symbol makes it much harder to guess');
+    if (common || containsCommon) hints.push('Avoid common words like “password”, “campus” or your name');
+    if (digitsOnly) hints.push('Digits alone are guessed almost instantly');
+    if (run) hints.push('Avoid repeated characters and sequences like “abc” or “1234”');
+
+    const labels = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong'];
+    return { score, label: labels[score], hints: hints.slice(0, 3) };
+  }
+
+  const MIN_SCORE = { student: 2, admin: 3 };
+  const MIN_LENGTH = { student: 8, admin: 12 };
+
+  /** Mirrors meetsPolicy() in src/lib/passwordStrength.js, length floor included. */
+  function passwordPolicy(value, role) {
+    const who = role === 'admin' ? 'admin' : 'student';
+    const result = passwordStrength(value);
+    const length = String(value == null ? '' : value).length;
+    return { ...result, ok: length >= MIN_LENGTH[who] && result.score >= MIN_SCORE[who] };
+  }
+
+  /**
+   * Attaches a live strength meter under a password input.
+   * Injects its own markup so every page gets the same component.
+   */
+  function attachPasswordMeter(input, options) {
+    const opts = options || {};
+    const role = opts.role === 'admin' ? 'admin' : 'student';
+    if (!input || !input.parentNode) return null;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'pw-meter';
+    wrap.innerHTML =
+      '<div class="pw-meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" aria-label="Password strength">' +
+        '<span class="pw-meter-fill"></span>' +
+      '</div>' +
+      '<div class="pw-meter-line"><span class="pw-meter-label" aria-live="polite"></span>' +
+      '<span class="pw-meter-need"></span></div>' +
+      '<ul class="pw-meter-hints"></ul>';
+    input.parentNode.appendChild(wrap);
+
+    const fill = wrap.querySelector('.pw-meter-fill');
+    const label = wrap.querySelector('.pw-meter-label');
+    const need = wrap.querySelector('.pw-meter-need');
+    const hints = wrap.querySelector('.pw-meter-hints');
+    const track = wrap.querySelector('.pw-meter-track');
+
+    const render = () => {
+      const value = input.value || '';
+      const policy = passwordPolicy(value, role);
+      wrap.dataset.score = String(policy.score);
+      fill.style.width = ((policy.score + 1) / 5) * 100 + '%';
+      track.setAttribute('aria-valuenow', String(policy.score));
+      label.textContent = value ? policy.label : '';
+      need.textContent = value ? (policy.ok ? 'Good to go' : 'Too weak to use') : '';
+      need.className = 'pw-meter-need ' + (value && !policy.ok ? 'bad' : 'good');
+      hints.innerHTML = value && !policy.ok
+        ? policy.hints.map((h) => '<li>' + escapeHtml(h) + '</li>').join('')
+        : '';
+      wrap.classList.toggle('is-weak', Boolean(value) && !policy.ok);
+    };
+
+    input.addEventListener('input', render);
+    input.addEventListener('blur', render);
+    render();
+    return { refresh: render, strength: () => passwordStrength(input.value), policy: () => passwordPolicy(input.value, role) };
+  }
+
   window.CC = {
     api,
     session,
     toast,
     escapeHtml,
+    passwordStrength,
+    passwordPolicy,
+    attachPasswordMeter,
     formatDate,
     formatDateTime,
     timeAgo,

@@ -104,7 +104,7 @@
     setAlert(cameraAlert, '');
     if (!cameraSupported()) {
       // Fall back to the native capture input, which works on mobile browsers.
-      setAlert(cameraAlert, 'Live camera preview is not available in this browser. Use the file picker below.', 'info');
+      setAlert(alertBox, 'Live camera preview is not available in this browser — use the file picker that just opened.', 'info');
       mobileCameraInput.click();
       return;
     }
@@ -169,7 +169,10 @@
 
   // Default the date to today, and never allow a future date.
   const dateInput = document.getElementById('occurredOn');
-  const today = new Date().toISOString().slice(0, 10);
+  // toISOString() is UTC: for IST users that is "yesterday" until 05:30, which
+  // pre-filled the wrong date and blocked today via max. Use the local date.
+  const now = new Date();
+  const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   dateInput.max = today;
   dateInput.value = today;
 

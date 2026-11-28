@@ -104,9 +104,52 @@ test('an XSS payload in a listing is stored but the API returns it as data', asy
 });
 
 test('oversized JSON bodies are rejected', async () => {
-  const big = { name: 'x'.repeat(2 * 1024 * 1024), email: 'big@saiuniversity.edu.in', password: 'Campus123' };
+  const big = { name: 'x'.repeat(2 * 1024 * 1024), email: 'big@saiuniversity.edu.in', password: 'CampusLife#2026' };
   const res = await request(app).post('/api/auth/register').send(big);
   assert.equal(res.status, 413);
+});
+
+test('every table in the public schema has row level security enabled', async () => {
+  const { query } = require('../src/db/pool');
+  const { rows } = await query(
+    `select c.relname
+       from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity
+      order by 1`
+  );
+  // A table added after the first migration must enable RLS itself; without it
+  // the anon key can read the rows through PostgREST.
+  assert.deepEqual(rows.map((r) => r.relname), [], 'tables without RLS: ' + rows.map((r) => r.relname).join(', '));
+});
+
+test('the schema refuses a password hash that is not a bcrypt digest', async () => {
+  const { query } = require('../src/db/pool');
+  await assert.rejects(
+    () =>
+      query(
+        `insert into users (name, email, password_hash) values ('Plain Text', 'plain@saiuniversity.edu.in', 'plaintext')`
+      ),
+    (err) => err.code === '23514',
+    'the users_password_hash_bcrypt constraint must reject a non-bcrypt hash'
+  );
+});
+
+test('production refuses a non-https APP_URL', () => {
+  const { buildConfig } = require('../src/config/env');
+  const base = {
+    NODE_ENV: 'production',
+    APP_URL: 'http://campusconnect.test',
+    DATABASE_URL: 'postgres://user:pass@host:5432/db',
+    JWT_SECRET: 'x'.repeat(48),
+    OTP_PEPPER: 'y'.repeat(48),
+    ALLOWED_EMAIL_DOMAINS: 'saiuniversity.edu.in',
+  };
+  assert.throws(() => buildConfig(base), /https/i);
+
+  // ... and accepts the same configuration over https
+  const cfg = buildConfig({ ...base, APP_URL: 'https://campusconnect.test' });
+  assert.equal(cfg.isProd, true);
+  assert.equal(cfg.APP_URL, 'https://campusconnect.test');
 });
 
 test('the health endpoint does not leak configuration', async () => {

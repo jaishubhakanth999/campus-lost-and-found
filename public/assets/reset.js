@@ -56,6 +56,8 @@
   /* ------------------------------ set a new one ---------------------------- */
 
   const resetForm = document.getElementById('resetForm');
+
+  window.CC.attachPasswordMeter(document.getElementById('password'), { role: 'student' });
   resetForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const button = document.getElementById('resetSubmit');
