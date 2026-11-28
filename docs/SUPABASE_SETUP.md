@@ -100,7 +100,10 @@ Then set:
 ```bash
 STORAGE_DRIVER=supabase
 SUPABASE_URL=https://PROJECT_REF.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=<Project Settings → API → service_role key>
+# Settings → API Keys → Secret keys → default  (eye icon, then copy).
+# Newer projects show `sb_secret_…`; older ones show a `service_role` JWT.
+# Both work — the API sends the value in both `apikey` and `Authorization`.
+SUPABASE_SERVICE_ROLE_KEY=<Project Settings → API Keys → Secret keys → default>
 SUPABASE_BUCKET_PUBLIC=item-images
 SUPABASE_BUCKET_PRIVATE=claim-evidence
 ```

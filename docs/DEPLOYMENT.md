@@ -80,7 +80,7 @@ Render can generate.
 | `APP_URL` | your Vercel URL, e.g. `https://campusconnect.vercel.app` |
 | `CORS_ORIGINS` | the same Vercel URL |
 | `MAIL_FROM`, `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` | your mail provider |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → **API Keys** (`sb_secret_…` on new projects, `service_role` JWT on older ones — both work) |
 
 3. Wait for the first deploy, then open `https://<service>.onrender.com/api/health`.
    It must return `{"ok":true,"database":{"connected":true}}`. If it does not, the
