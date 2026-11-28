@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CampusConnect — Architecture</title>
+<style>
+  :root{
+    --ink:#17251f; --ink-soft:#2a3a32; --muted:#5e6b64;
+    --green:#236b50; --green-dark:#1a5340; --green-tint:#eaf3ee;
+    --lime:#d8f36a; --cream:#f7f8f3; --line:#dfe5dc;
+    --blue:#3b5c8a; --blue-tint:#eef2ff; --amber:#8a6d1f; --amber-tint:#fbf5e6;
+    --rose:#9b1c1c; --rose-tint:#fbeceb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+       font-family:"Segoe UI",Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5}
+  .page{width:1240px;margin:0 auto;padding:40px 44px 56px}
+  h1{font-size:34px;margin:0 0 6px;letter-spacing:-.5px}
+  h2{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 26px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 28px 30px;margin-bottom:26px}
+  .card-head{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+  .num{width:26px;height:26px;border-radius:8px;background:var(--green);color:#fff;
+       font-size:13px;font-weight:700;display:grid;place-items:center;flex:none}
+  .card .lede{color:var(--muted);margin:0 0 22px;font-size:14px}
+
+  /* generic node */
+  .node{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff}
+  .node .t{font-weight:700;font-size:14px;margin-bottom:2px}
+  .node .d{font-size:12.5px;color:var(--muted)}
+  .node.green{background:var(--green-tint);border-color:#bfdccd}
+  .node.blue{background:var(--blue-tint);border-color:#c9d4ea}
+  .node.amber{background:var(--amber-tint);border-color:#e8dcb4}
+  .node.rose{background:var(--rose-tint);border-color:#f0cbc8}
+  .node.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .node.dark .d{color:#a9bdb2}
+  .tag{display:inline-block;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+       font-weight:700;color:var(--muted);margin-bottom:7px}
+  code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12.5px;
+       background:#f2f5ef;border-radius:5px;padding:1px 5px;color:var(--green-dark)}
+
+  /* layer stack */
+  .layer{display:grid;grid-template-columns:210px 1fr;gap:16px;align-items:center;margin-bottom:0}
+  .layer .side{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+               font-weight:700;text-align:right;padding-right:6px}
+  .row{display:flex;gap:12px}
+  .row > *{flex:1}
+  .arrow-row{display:grid;grid-template-columns:210px 1fr;gap:16px;align-items:center}
+  .arrow-row .v{display:flex;flex-direction:column;align-items:center;justify-content:center;
+                padding:8px 0;color:var(--green);font-size:12px;font-weight:700;gap:2px}
+  .arrow-row .v .a{font-size:18px;line-height:1}
+
+  /* steps */
+  .steps{counter-reset:s;display:grid;gap:10px}
+  .step{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start}
+  .step .b{width:26px;height:26px;border-radius:50%;background:var(--green-tint);
+           color:var(--green-dark);border:1.5px solid #bfdccd;font-weight:700;font-size:12.5px;
+           display:grid;place-items:center;margin-top:1px}
+  .step .body{font-size:13.5px}
+  .step .body b{display:block;font-size:13.5px;margin-bottom:1px}
+  .step .body span{color:var(--muted)}
+
+  /* state machine */
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .state{border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;border:1.5px solid}
+  .s-open{background:var(--blue-tint);border-color:#c9d4ea;color:var(--blue)}
+  .s-pending{background:var(--amber-tint);border-color:#e8dcb4;color:var(--amber)}
+  .s-ok{background:var(--green-tint);border-color:#bfdccd;color:var(--green-dark)}
+  .s-no{background:#f1f2ee;border-color:var(--line);color:var(--muted)}
+  .edge{display:flex;flex-direction:column;align-items:center;color:var(--muted);font-size:11px;gap:1px}
+  .edge .a{font-size:17px;color:var(--green);line-height:1}
+
+  /* tables */
+  .tables{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .tbl{border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .tbl .h{background:var(--green-tint);padding:8px 10px;font-weight:700;font-size:12.5px;
+          color:var(--green-dark);border-bottom:1px solid var(--line)}
+  .tbl ul{margin:0;padding:8px 10px 10px 22px;font-size:11.8px;color:var(--ink-soft)}
+  .tbl li{margin:2px 0}
+  .tbl .k{color:var(--green-dark);font-weight:700}
+  .rel{display:flex;justify-content:center;color:var(--muted);font-size:12px;margin:10px 0 2px}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:18px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:12px;height:12px;border-radius:3px;border:1.5px solid var(--line)}
+  .note{margin-top:18px;padding:12px 14px;border-left:4px solid var(--green);background:var(--cream);
+        border-radius:8px;font-size:12.8px;color:var(--ink-soft)}
+  .foot{color:var(--muted);font-size:11.5px;text-align:center;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>CampusConnect — how the whole thing fits together</h1>
+  <p class="sub">A lost &amp; found portal for Sai University. Three deployables, one database, one rule: nothing is trusted until the university email is verified.</p>
+
+  <!-- ================= 1. SYSTEM OVERVIEW ================= -->
+  <section class="card" data-card="1">
+    <div class="card-head"><span class="num">1</span><h2>System overview — what runs where</h2></div>
+    <p class="lede">Three pieces, each doing one job. The browser only ever talks to the API; it never touches the database directly.</p>
+
+    <div class="layer">
+      <div class="side">People</div>
+      <div class="row">
+        <div class="node green"><div class="t">Student · any phone or laptop</div><div class="d">Browse, report an item, claim one, track it</div></div>
+        <div class="node amber"><div class="t">Administrator · desktop</div><div class="d">Moderate listings, users, claims, read the audit log</div></div>
+      </div>
+    </div>
+
+    <div class="arrow-row">
+      <div class="side"></div>
+      <div class="v"><span class="a">↓</span><span>HTTPS · pages, then JSON calls to <code>/api/*</code></span></div>
+    </div>
+
+    <div class="layer">
+      <div class="side">Deployable 1<br>Vercel (CDN)</div>
+      <div class="row">
+        <div class="node blue"><div class="t">The pages</div><div class="d">Plain HTML + CSS + JS. No build step. 7 screens, served from the edge.</div></div>
+      </div>
+    </div>
+
+    <div class="arrow-row">
+      <div class="side"></div>
+      <div class="v"><span class="a">↔</span><span><code>fetch()</code> with <code>Authorization: Bearer &lt;jwt&gt;</code></span></div>
+    </div>
+
+    <div class="layer">
+      <div class="side">Deployable 2<br>Render (Node)</div>
+      <div class="node dark">
+        <div class="t">Express API — the only component that holds secrets</div>
+        <div class="d">Validates every request, decides who may do what, talks to the database and the mail server. 18 endpoints.</div>
+      </div>
+    </div>
+
+    <div class="arrow-row">
+      <div class="side"></div>
+      <div class="v"><span class="a">↓</span><span>SQL over TLS · <code>pg</code> connection pool</span></div>
+    </div>
+
+    <div class="layer">
+      <div class="side">Deployable 3<br>Supabase</div>
+      <div class="row">
+        <div class="node green"><div class="t">PostgreSQL</div><div class="d">8 tables · constraints · indexes · full-text search · RLS on</div></div>
+        <div class="node green"><div class="t">Storage — 2 buckets</div><div class="d"><code>item-images</code> public · <code>claim-evidence</code> private</div></div>
+      </div>
+    </div>
+
+    <div class="arrow-row">
+      <div class="side">Side channels</div>
+      <div class="row">
+        <div class="node"><div class="t">SMTP provider</div><div class="d">OTP codes, reset links, claim notifications</div></div>
+        <div class="node"><div class="t">Your inbox</div><div class="d">The only place a 6-digit code ever appears</div></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><i class="sw" style="background:var(--green-tint)"></i> trust boundary — data</span>
+      <span><i class="sw" style="background:var(--blue-tint)"></i> public, no secrets</span>
+      <span><i class="sw" style="background:var(--ink)"></i> holds secrets</span>
+    </div>
+  </section>
+
+  <!-- ================= 2. REQUEST LIFECYCLE ================= -->
+  <section class="card" data-card="2">
+    <div class="card-head"><span class="num">2</span><h2>One request, step by step</h2></div>
+    <p class="lede">What happens between a student tapping “Approve claim” and the database agreeing to it.</p>
+
+    <div class="steps">
+      <div class="step"><div class="b">1</div><div class="body"><b>Browser sends the request</b><span>Cookie-free: the JWT from localStorage goes in the <code>Authorization</code> header.</span></div></div>
+      <div class="step"><div class="b">2</div><div class="body"><b>helmet + CORS + rate limit</b><span>Security headers, an explicit origin allow-list, and a per-user request budget.</span></div></div>
+      <div class="step"><div class="b">3</div><div class="body"><b>authenticate</b><span>Verify the JWT signature, then look the session row up in <code>user_sessions</code>. Logged out, expired, revoked or suspended → 401, immediately.</span></div></div>
+      <div class="step"><div class="b">4</div><div class="body"><b>requireRole + zod validation</b><span>Is this an administrator endpoint? Is the body the right shape? Unknown fields are dropped; a query operator such as <code>?status[$ne]=open</code> is a 400.</span></div></div>
+      <div class="step"><div class="b">5</div><div class="body"><b>Service layer — the rules live here</b><span>“Only the listing owner may decide a claim.” “An item cannot be marked returned while a claim is open.”</span></div></div>
+      <div class="step"><div class="b">6</div><div class="body"><b>One transaction</b><span><code>BEGIN</code> → lock the claim and item rows → conditional <code>UPDATE … WHERE status='open'</code> → write the audit row → <code>COMMIT</code>. Half a change can never land.</span></div></div>
+      <div class="step"><div class="b">7</div><div class="body"><b>Side effects after the commit</b><span>Email the claimant, then answer with JSON. A mail failure cannot roll back a decision.</span></div></div>
+    </div>
+
+    <div class="note">Every response is JSON in one shape: <code>{ ok: true, … }</code> or <code>{ error: { code, message, fields } }</code>. The browser never parses HTML from the API, so a listing title containing <code>&lt;script&gt;</code> is inert data.</div>
+  </section>
+
+  <!-- ================= 3. AUTH SEQUENCE ================= -->
+  <section class="card" data-card="3">
+    <div class="card-head"><span class="num">3</span><h2>Signing in — two factors, then a session</h2></div>
+    <p class="lede">The password is factor one. The 6-digit code sent to the university inbox is factor two. No token exists until both pass.</p>
+
+    <div class="flow" style="margin-bottom:18px">
+      <div class="state s-open">Email + password</div>
+      <div class="edge"><span class="a">→</span><span>domain check</span></div>
+      <div class="state s-open">bcrypt compare</div>
+      <div class="edge"><span class="a">→</span><span>code generated</span></div>
+      <div class="state s-pending">OTP emailed</div>
+      <div class="edge"><span class="a">→</span><span>user types it</span></div>
+      <div class="state s-ok">JWT + session</div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><div class="b">1</div><div class="body"><b>Domain allow-list</b><span>Only <code>@saiuniversity.edu.in</code> and its sub-domains. A gmail address is refused before any password is checked.</span></div></div>
+      <div class="step"><div class="b">2</div><div class="body"><b>Password check</b><span>bcrypt cost 12. Wrong password and unknown account return the identical message, so the form cannot be used to discover who has an account.</span></div></div>
+      <div class="step"><div class="b">3</div><div class="body"><b>Code created, never stored plainly</b><span>6 digits, valid 5 minutes, stored as an HMAC-SHA256 digest keyed with a server secret. Issuing a new code cancels the previous one.</span></div></div>
+      <div class="step"><div class="b">4</div><div class="body"><b>Verification is atomic</b><span>The code is burned with <code>UPDATE … WHERE consumed_at IS NULL</code>. Two parallel requests cannot both succeed; five wrong tries destroy it.</span></div></div>
+      <div class="step"><div class="b">5</div><div class="body"><b>Session row + JWT</b><span>The token carries a session id. Every later request checks that row, which is why logout and “suspend account” work instantly instead of waiting for the token to expire.</span></div></div>
+    </div>
+
+    <div class="note"><b>Forgotten password?</b> A 64-character link, stored only as a digest, single use, 30 minutes. Using it signs every other session out — a stolen session does not survive a reset.</div>
+  </section>
+
+  <!-- ================= 4. CLAIM STATE MACHINE ================= -->
+  <section class="card" data-card="4">
+    <div class="card-head"><span class="num">4</span><h2>An item's life, and a claim's life</h2></div>
+    <p class="lede">The two are linked on purpose: an item can only become “returned” through a completed claim, so the record always matches reality.</p>
+
+    <p class="tag">Item</p>
+    <div class="flow" style="margin-bottom:22px">
+      <div class="state s-open">open</div>
+      <div class="edge"><span class="a">→</span><span>claim approved</span></div>
+      <div class="state s-pending">claimed</div>
+      <div class="edge"><span class="a">→</span><span>handover confirmed</span></div>
+      <div class="state s-ok">returned</div>
+      <div class="edge"><span class="a">→</span><span>archive</span></div>
+      <div class="state s-no">closed</div>
+    </div>
+
+    <p class="tag">Claim</p>
+    <div class="flow">
+      <div class="state s-pending">pending</div>
+      <div class="edge"><span class="a">→</span><span>owner approves</span></div>
+      <div class="state s-ok">approved</div>
+      <div class="edge"><span class="a">→</span><span>item collected</span></div>
+      <div class="state s-ok">completed</div>
+    </div>
+    <div class="flow" style="margin-top:12px">
+      <div class="state s-no">rejected</div>
+      <div class="state s-no">withdrawn</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-left:4px">…both terminal. A decided claim can never be re-decided (409), and approving one claim auto-rejects the rivals on that item.</div>
+    </div>
+
+    <div class="note">This is the part the first version got wrong: the owner could not read the claim message, and a second approval could leave two “approved” claims on one item. Both are now impossible — the second approval fails its conditional update, and the message is on screen before the buttons.</div>
+  </section>
+
+  <!-- ================= 5. DATA MODEL ================= -->
+  <section class="card" data-card="5">
+    <div class="card-head"><span class="num">5</span><h2>The database — 8 tables</h2></div>
+    <p class="lede">Constraints do the arguing, so a bug cannot quietly write nonsense: one account per email, one live code per purpose, one live claim per person per item, and a password hash that must really be a bcrypt digest.</p>
+
+    <div class="tables">
+      <div class="tbl"><div class="h">users</div><ul>
+        <li><span class="k">email</span> unique (lower-cased)</li>
+        <li><span class="k">role</span> student · admin</li>
+        <li><span class="k">status</span> active · suspended</li>
+        <li><span class="k">is_email_verified</span></li>
+        <li>student_id · department · phone</li>
+        <li>created_at · updated_at</li>
+      </ul></div>
+      <div class="tbl"><div class="h">items</div><ul>
+        <li><span class="k">owner_id</span> → users</li>
+        <li><span class="k">type</span> lost · found</li>
+        <li><span class="k">status</span> open · claimed · returned</li>
+        <li><span class="k">images</span> jsonb (references only)</li>
+        <li>search_vector (full-text)</li>
+        <li>expires_at · returned_at</li>
+      </ul></div>
+      <div class="tbl"><div class="h">claims</div><ul>
+        <li><span class="k">item_id</span> → items</li>
+        <li><span class="k">claimant_id</span> → users</li>
+        <li><span class="k">status</span> pending → completed</li>
+        <li>message · evidence (private)</li>
+        <li>decided_by · decision_note</li>
+        <li>unique (item, claimant) while live</li>
+      </ul></div>
+      <div class="tbl"><div class="h">user_sessions</div><ul>
+        <li><span class="k">user_id</span> → users</li>
+        <li><span class="k">session_id</span> (in the JWT)</li>
+        <li>login_at · logout_at</li>
+        <li><span class="k">status</span> active · logged_out · expired · revoked</li>
+        <li>ip · user_agent</li>
+      </ul></div>
+      <div class="tbl"><div class="h">otp_codes</div><ul>
+        <li><span class="k">user_id</span> → users</li>
+        <li><span class="k">purpose</span> signup · login · admin_login</li>
+        <li><span class="k">code_hash</span> HMAC digest</li>
+        <li>attempts · max_attempts</li>
+        <li>expires_at · consumed_at</li>
+        <li>one live code per purpose</li>
+      </ul></div>
+      <div class="tbl"><div class="h">password_reset_tokens</div><ul>
+        <li><span class="k">user_id</span> → users</li>
+        <li><span class="k">token_hash</span> digest only</li>
+        <li>expires_at · used_at</li>
+        <li>one live link per account</li>
+      </ul></div>
+      <div class="tbl"><div class="h">auth_events</div><ul>
+        <li><span class="k">user_id</span> → users</li>
+        <li>event · outcome · reason</li>
+        <li>email · ip · user_agent</li>
+        <li>never a password, code or token</li>
+      </ul></div>
+      <div class="tbl"><div class="h">admin_audit_logs</div><ul>
+        <li><span class="k">actor_id</span> → users</li>
+        <li>action · target_type · target_id</li>
+        <li>details (before/after)</li>
+        <li>ip · created_at</li>
+      </ul></div>
+    </div>
+
+    <div class="rel">users 1 ─── ∞ items 1 ─── ∞ claims ∞ ─── 1 users · users 1 ─── ∞ sessions / otp_codes / reset_tokens / auth_events / audit_logs</div>
+
+    <div class="note"><b>Images are not in the database.</b> The row holds a small reference (<code>{key, url, width, height}</code>); the bytes live in Supabase Storage. Claim evidence goes to the private bucket and is handed out only as a 5-minute signed link to the two people involved.</div>
+  </section>
+
+  <p class="foot">CampusConnect · Sai University · architecture overview generated from the deployed code</p>
+</div>
+</body>
+</html>

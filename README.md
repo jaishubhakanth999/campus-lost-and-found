@@ -257,6 +257,7 @@ and behaviour under concurrent load. Those need a deployed environment (see
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Vercel (frontend) + Render (API) + Supabase (data), environment variables, post-deploy checks |
 | `render.yaml` | Render Blueprint — deploys the API with build/start commands, health check and env vars |
 | [`docs/FRONTEND.md`](docs/FRONTEND.md) | Every page: route, purpose, API calls, UI elements |
+| [`docs/architecture.html`](docs/architecture.html) | Five diagrams: what runs where, one request step by step, sign-in, item/claim states, the data model |
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model, what is protected, what is deliberately out of scope |
 | [`docs/API.md`](docs/API.md) | Endpoint reference with request/response examples |
 | [`docs/AUDIT_FIXES.md`](docs/AUDIT_FIXES.md) | Every finding from the independent review, and what was done about it |

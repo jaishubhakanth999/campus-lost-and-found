@@ -428,6 +428,22 @@ test('the admin console blocks a student and never renders admin data', async ()
   assert.equal(calls.filter((c) => c.url.startsWith('/api/admin')).length, 0);
 });
 
+test('the admin users table labels roles and verification, not CSS class names', async () => {
+  const { window } = loadPage('admin/index.html', { role: 'admin' });
+  await tick();
+
+  window.document.querySelector('.admin-side [data-section="users"]').click();
+  await tick(400);
+
+  const table = window.document.getElementById('adminPanel').textContent;
+  assert.match(table, /student/i, 'the role is shown as a word');
+  assert.match(table, /verified/i);
+  // The bug this locks down: pill() used to rewrite the CSS class instead of the
+  // label, so the table read "CLOSED"/"APPROVED" instead of the role.
+  assert.doesNotMatch(table, /closed/i);
+  assert.doesNotMatch(table, /approved/i);
+});
+
 test('the admin console can change the administrator password', async () => {
   const { window, calls } = loadPage('admin/index.html', {
     role: 'admin',

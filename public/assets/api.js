@@ -162,9 +162,13 @@
       .toUpperCase();
   }
 
-  function pill(status) {
-    const label = String(status || '').replace(/_/g, ' ');
-    return '<span class="pill ' + escapeHtml(status) + '">' + escapeHtml(label) + '</span>';
+  /**
+   * Badge. `status` picks the colour (a CSS class); `label` is what the reader
+   * sees, so a role or an outcome can be shown without inventing CSS classes.
+   */
+  function pill(status, label) {
+    const text = label || String(status || '').replace(/_/g, ' ');
+    return '<span class="pill ' + escapeHtml(status) + '">' + escapeHtml(text) + '</span>';
   }
 
   /* --------------------------------- toast -------------------------------- */

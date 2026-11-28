@@ -258,8 +258,8 @@
             '<tr>' +
               '<td>' + escapeHtml(u.name) + (u.report_count ? '<br><small class="muted">' + u.report_count + ' report(s)</small>' : '') + '</td>' +
               '<td>' + escapeHtml(u.email) + '</td>' +
-              '<td>' + pill(u.role === 'admin' ? 'approved' : 'closed').replace('approved', 'admin').replace('closed', 'student') + '</td>' +
-              '<td>' + (u.is_email_verified ? '✅' : '—') + '</td>' +
+              '<td>' + pill(u.role === 'admin' ? 'role-admin' : 'role-student', u.role) + '</td>' +
+              '<td>' + (u.is_email_verified ? pill('success', 'verified') : pill('failure', 'unverified')) + '</td>' +
               '<td>' + pill(u.status) + '</td>' +
               '<td><small>' + formatDate(u.created_at) + '</small></td>' +
               '<td><small>' + (u.last_login_at ? timeAgo(u.last_login_at) : 'never') + '</small></td>' +
@@ -452,7 +452,7 @@
             '<tr>' +
               '<td><small>' + formatDateTime(e.created_at) + '</small></td>' +
               '<td><code style="font-size:.8rem;">' + escapeHtml(e.event) + '</code></td>' +
-              '<td>' + pill(e.outcome === 'success' ? 'approved' : e.outcome === 'blocked' ? 'rejected' : 'pending').replace('approved', 'success').replace('rejected', 'blocked').replace('pending', 'failure') + '</td>' +
+              '<td>' + pill(e.outcome, e.outcome) + '</td>' +
               '<td><small>' + escapeHtml(e.email || '—') + '</small></td>' +
               '<td><small>' + escapeHtml(e.reason || '—') + '</small></td>' +
               '<td><small>' + escapeHtml(e.ip || '—') + '</small></td>' +
