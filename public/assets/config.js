@@ -1,12 +1,11 @@
 /* Runtime configuration for the browser.
  *
- * Same-origin deployment (Express serves this folder): leave apiBase empty.
- * Split deployment (frontend on Vercel, API on Render): set apiBase to the API
- * origin, e.g. "https://campusconnect-api.onrender.com", and add that origin to
- * CORS_ORIGINS on the server.
+ * Split deployment: the pages live on Vercel, the API on Render. apiBase is the
+ * API origin, and it must also be listed in CORS_ORIGINS on the server.
+ * Leave it empty only when the same Express server serves these pages.
  */
 window.CAMPUS_CONFIG = {
-  apiBase: '',
+  apiBase: 'https://campus-lost-and-found2.onrender.com',
   siteName: 'CampusConnect',
   university: 'Sai University',
 };
