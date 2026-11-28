@@ -23,6 +23,13 @@ Supabase is a **database + storage** service, not a Node host: it cannot run
 The repository ships `render.yaml`, a Render **Blueprint**. It declares the whole
 service, so you do not have to remember any setting.
 
+### Node version
+
+`package.json` pins `"node": ">=20 <23"`. Without an upper bound, Render resolves
+`>=20` to the newest major it offers — on the first deploy it chose **Node 26**,
+which nothing here has been tested against (native modules: sharp, pg). Both
+Node 20 and 22 are exercised by CI on every push; 22 is the recommended target.
+
 ### One-time deploy
 
 1. Render dashboard → **New → Blueprint** → connect this repository → **Apply**.
