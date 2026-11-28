@@ -145,7 +145,10 @@ async function listItems({ filters = {}, page = 1, limit = 12 }) {
 
   const countRes = await query(`select count(*)::int as n from items i ${whereSql}`, params);
   const total = countRes.rows[0].n;
-  const offset = (page - 1) * limit;
+  const pages = Math.max(1, Math.ceil(total / limit));
+  // F17: a stale page number must not read as "nothing exists".
+  const safePage = Math.min(Math.max(1, page), pages);
+  const offset = (safePage - 1) * limit;
 
   const rows = await query(
     `select ${PUBLIC_COLUMNS}
@@ -159,17 +162,18 @@ async function listItems({ filters = {}, page = 1, limit = 12 }) {
 
   return {
     items: rows.rows.map(shapeItem),
-    page,
+    page: safePage,
     limit,
     total,
-    pages: Math.max(1, Math.ceil(total / limit)),
+    pages,
   };
 }
 
 async function getItem(id, { viewer = null } = {}) {
   const { rows } = await query(
-    `select ${PUBLIC_COLUMNS}, i.owner_id,
-            (select count(*) from claims c where c.item_id = i.id and c.status <> 'withdrawn') as claim_count
+    `select ${PUBLIC_COLUMNS}, i.owner_id, i.moderation_status,
+            (select count(*) from claims c
+               where c.item_id = i.id and c.status in ('pending', 'approved')) as claim_count
        from items i
        join users u on u.id = i.owner_id
       where i.id = $1`,
@@ -180,7 +184,8 @@ async function getItem(id, { viewer = null } = {}) {
 
   const isOwner = viewer && viewer.id === row.owner_id;
   const isAdmin = viewer && viewer.role === 'admin';
-  if (row.status === 'removed' && !isOwner && !isAdmin) {
+  // Hidden means hidden: removed by the owner, or rejected by a moderator.
+  if ((row.status === 'removed' || row.moderation_status !== 'approved') && !isOwner && !isAdmin) {
     throw notFound('That item could not be found');
   }
 
@@ -264,6 +269,7 @@ async function updateItem(id, user, patch) {
   const values = [];
   const map = {
     title: 'title',
+    type: 'type',
     category: 'category',
     description: 'description',
     location: 'location',
@@ -293,19 +299,36 @@ async function setStatus(id, user, nextStatus) {
 
   assertTransition(item, nextStatus, role);
 
-  // F4: "returned" must not strand live claims. Either the claim flow completes
-  // them, or an administrator closes them explicitly.
-  if (nextStatus === 'returned' && role !== 'admin') {
-    const live = await query(
-      `select count(*)::int as n from claims
-        where item_id = $1 and status in ('pending', 'approved')`,
-      [id]
-    );
-    if (live.rows[0].n > 0) {
+  // "returned" must not strand live claims. The owner is told to finish the
+  // claim; an administrator may force it, but then the claims are closed in the
+  // same transaction so the two records can never disagree (F6).
+  const live = await query(
+    `select id, status from claims
+      where item_id = $1 and status in ('pending', 'approved')`,
+    [id]
+  );
+  if (nextStatus === 'returned' && live.rowCount > 0) {
+    if (role !== 'admin') {
       throw conflict(
         'This listing has an open claim. Complete the claim from your dashboard (or ask an administrator) instead of marking it returned directly.'
       );
     }
+    await withTransaction(async (client) => {
+      await client.query(
+        `update claims
+            set status = case when status = 'approved' then 'completed' else 'rejected' end,
+                decision_note = coalesce(decision_note, 'Listing marked returned by an administrator'),
+                decided_at = coalesce(decided_at, now()),
+                completed_at = case when status = 'approved' then now() else completed_at end
+          where item_id = $1 and status in ('pending', 'approved')`,
+        [id]
+      );
+      await client.query(
+        `update items set status = $2, returned_at = now() where id = $1`,
+        [id, nextStatus]
+      );
+    });
+    return getItem(id, { viewer: user });
   }
 
   await query(

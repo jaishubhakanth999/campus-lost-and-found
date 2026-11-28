@@ -83,7 +83,13 @@
     const isJson = (response.headers.get('content-type') || '').includes('application/json');
     const payload = isJson ? await response.json().catch(() => ({})) : {};
 
-    if (response.status === 401 && !opts.allowUnauthorized) {
+    // A 401 from a sign-in endpoint means "wrong credentials", not "your session
+    // ended": reloading the page there would throw the error message away.
+    const isCredentialCall = /^\/api\/auth\/(login|register|verify-otp|admin\/login|reset-password|forgot-password)/.test(
+      String(path)
+    );
+
+    if (response.status === 401 && !opts.allowUnauthorized && !isCredentialCall) {
       session.clear();
       const inAdmin = location.pathname.indexOf('/admin/') !== -1;
       const next = encodeURIComponent(location.pathname + location.search);
@@ -99,7 +105,12 @@
     }
 
     if (!response.ok) {
-      throw new ApiError(response.status, payload.error || payload);
+      const error = payload.error || payload;
+      if (response.status === 503) {
+        error.message =
+          error.message || 'The service is busy right now. Please try again in a moment.';
+      }
+      throw new ApiError(response.status, error);
     }
     return payload;
   }

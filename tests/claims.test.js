@@ -251,6 +251,32 @@ test('private claim evidence is only visible to the two parties', async () => {
   assert.doesNotMatch(JSON.stringify(gallery.body), /private\//);
 });
 
+test('a claim cannot be completed once the listing was removed', async () => {
+  const itemId = await freshFoundItem('Found removed before handover');
+  const created = await claimAs(claimant, itemId, 'It has a small engraving on the clasp.');
+
+  await request(app)
+    .patch(`/api/claims/${created.body.claim.id}/decision`)
+    .set('Authorization', `Bearer ${owner.token}`)
+    .send({ decision: 'approved' });
+
+  const removed = await request(app)
+    .delete(`/api/items/${itemId}`)
+    .set('Authorization', `Bearer ${owner.token}`);
+  assert.equal(removed.status, 200);
+
+  const complete = await request(app)
+    .patch(`/api/claims/${created.body.claim.id}/complete`)
+    .set('Authorization', `Bearer ${owner.token}`);
+  assert.equal(complete.status, 409, 'a removed listing must not produce a completed claim');
+
+  // the two records still agree
+  const claimRow = await query(`select status from claims where id = $1`, [created.body.claim.id]);
+  const itemRow = await query(`select status from items where id = $1`, [itemId]);
+  assert.equal(claimRow.rows[0].status, 'approved');
+  assert.equal(itemRow.rows[0].status, 'removed');
+});
+
 test('claiming a closed item is refused', async () => {
   const itemId = await freshFoundItem('Found closed item');
   await request(app)

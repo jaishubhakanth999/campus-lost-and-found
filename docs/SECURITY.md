@@ -73,6 +73,11 @@ Written to be read by whoever runs this platform, not just by developers.
 - Administrators rotate their own password from **/admin/ → Security**, which is
   the only place an administrator can do it (the student dashboard is closed to
   admin accounts by design).
+- Portal separation is enforced at the **login entry point**: a student cannot
+  authenticate through the admin portal and an administrator cannot authenticate
+  through the student portal. The resulting session is an ordinary user session —
+  authorisation is always decided by role and ownership per request, never by
+  which page issued the token.
 
 ## 4. Authorisation
 

@@ -44,7 +44,7 @@ the parts you should not "simplify" later:
 
 ## The test suite after the fixes
 
-126 tests, all passing:
+142 tests, all passing:
 
 | File | Tests | Covers |
 |---|---|---|
@@ -55,8 +55,12 @@ the parts you should not "simplify" later:
 | `tests/security.test.js` | 13 | token tampering, headers, CORS, path traversal |
 | `tests/regressions.test.js` | 12 | one test per audit finding above |
 | `tests/recovery.test.js` | 11 | password reset end to end, listing expiry and owner warnings |
-| `tests/ui.test.js` | 14 | every page boots in a DOM; forms submit the right payloads |
+| `tests/ui.test.js` | 18 | every page boots in a DOM; forms submit the right payloads |
+| `tests/review2.test.js` | 9 | one test per finding from the second review (see REVIEW-2.md) |
 
 ```bash
-npm test          # ~2 minutes; needs a machine that can run WebAssembly
+npm test              # everything (~4 minutes)
+npm test -- claims    # one file
 ```
+
+A second review later found 18 more defects — see [`REVIEW-2.md`](REVIEW-2.md).

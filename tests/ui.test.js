@@ -187,6 +187,15 @@ test('every page loads, runs its scripts and renders without errors', async () =
   }
 });
 
+test('the gallery inputs are capped at the limits the API accepts', async () => {
+  const { window } = loadPage('index.html');
+  await tick();
+  // The API rejects a search longer than 80 characters and a location longer
+  // than 60; without maxlength the user gets a bare 400 with no explanation.
+  assert.equal(window.document.getElementById('search').getAttribute('maxlength'), '80');
+  assert.equal(window.document.getElementById('location').getAttribute('maxlength'), '60');
+});
+
 test('the gallery renders a card with the item data and no owner email', async () => {
   const { window } = loadPage('index.html');
   await tick();

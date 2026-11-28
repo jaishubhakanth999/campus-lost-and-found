@@ -99,7 +99,7 @@ One page, three panels, because the flow is a single conversation.
 | **Auth** | administrator session only; a student is sent back to the public site |
 | **API** | `POST /api/auth/admin/login` → `POST /api/auth/verify-otp` · `GET /api/admin/overview` · `/users` · `/items` · `/claims` · `/sessions` · `/auth-events` · `/audit-logs` · the matching `PATCH` routes |
 | **UI** | its own login with an OTP step · dark sidebar · **Overview** (12 counters + "needs attention") · **Users** (search, verify status, suspend, reactivate, promote) · **Lost & found** (moderate: approve, remove, restore) · **Claims** (decide as an administrator) · **Login history** (revoke a session) · **Security events** · **Audit log** · **Security** (change the administrator password, see own sessions) |
-| **Notes** | Every section is paginated. Hiding a button is never the control — each of these endpoints is guarded on the server, and the tests assert 403 for a student token on every admin route. |
+| **Notes** | Every section is paginated (the pager binds its handlers after render — see REVIEW-2 F1). Hiding a button is never the control — each of these endpoints is guarded on the server, and the tests assert 403 for a student token on every admin route. |
 
 ---
 

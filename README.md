@@ -31,7 +31,7 @@ front end's visual identity are all preserved.
 | Images | Trusted the client's MIME type | Decoded and re-encoded with sharp (real type check, EXIF stripped, resized) |
 | Claims | Owner could not read the claim text; double approvals possible | Full claim text in the UI; guarded state machine inside a transaction |
 | Validation | Inline presence checks | zod schemas on every route; 400s with field-level errors |
-| Tests | None | 126 tests: integration against a real PostgreSQL server, plus every page executed in a DOM |
+| Tests | None | 142 tests: integration against a real PostgreSQL server, plus every page executed in a DOM |
 | CI | None | GitHub Actions runs the suite on Node 20 and 22 for every push and pull request |
 
 Full detail, including the audit that motivated each change, is in
@@ -195,7 +195,7 @@ npm test
 The suite starts a **real PostgreSQL server** (PGlite — PostgreSQL 19 compiled to
 WebAssembly) over TCP, runs the actual migrations against it, drives the HTTP API
 with Supertest, and loads every page in a headless DOM to submit its forms.
-126 tests cover:
+142 tests cover:
 
 - email domain rules, OTP success/failure/expiry/reuse/attempt limits/resend/rate caps
 - unverified and suspended accounts, admin/student portal separation
@@ -260,13 +260,14 @@ and behaviour under concurrent load. Those need a deployed environment (see
 | [`docs/architecture.html`](docs/architecture.html) | Five diagrams: what runs where, one request step by step, sign-in, item/claim states, the data model |
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model, what is protected, what is deliberately out of scope |
 | [`docs/API.md`](docs/API.md) | Endpoint reference with request/response examples |
-| [`docs/AUDIT_FIXES.md`](docs/AUDIT_FIXES.md) | Every finding from the independent review, and what was done about it |
+| [`docs/AUDIT_FIXES.md`](docs/AUDIT_FIXES.md) | Every finding from the first review, and what was done about it |
+| [`docs/REVIEW-2.md`](docs/REVIEW-2.md) | The second review: 18 findings, all fixed, each with a regression test |
 
 ---
 
 ## 8. Status and honest limitations
 
-Working and verified locally (126 tests, every page booted and rendered in a
+Working and verified locally (142 tests, every page booted and rendered in a
 headless DOM):
 
 - the complete OTP registration and login flow, sessions, logout tracking

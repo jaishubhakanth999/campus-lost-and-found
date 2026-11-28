@@ -81,7 +81,7 @@
       <form class="filters" id="filterForm" role="search" aria-label="Filter listings">
         <div class="field" style="margin:0;">
           <label for="search">Search</label>
-          <input id="search" name="search" type="search" placeholder="Wallet, ID card, water bottle…" autocomplete="off">
+          <input id="search" name="search" type="search" maxlength="80" placeholder="Wallet, ID card, water bottle…" autocomplete="off">
         </div>
         <div class="field" style="margin:0;">
           <label for="category">Category</label>
@@ -100,7 +100,7 @@
         </div>
         <div class="field" style="margin:0;">
           <label for="location">Location</label>
-          <input id="location" name="location" list="locationList" placeholder="e.g. Library" autocomplete="off">
+          <input id="location" name="location" maxlength="60" list="locationList" placeholder="e.g. Library" autocomplete="off">
           <datalist id="locationList"></datalist>
         </div>
         <div class="field" style="margin:0;">

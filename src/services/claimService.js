@@ -79,6 +79,12 @@ async function submit({ user, itemId, message, processedImages = [] }) {
   if (item.status !== 'open') throw conflict('This item is no longer open for claims');
   if (item.moderation_status !== 'approved') throw conflict('This listing is not available');
 
+  // F8: a suspended owner can never review a claim, so accepting one would strand it.
+  const ownerRow = await query(`select status from users where id = $1`, [item.owner_id]);
+  if (!ownerRow.rows[0] || ownerRow.rows[0].status !== 'active') {
+    throw conflict("This listing's owner is currently unavailable. Please contact the campus help desk.");
+  }
+
   const evidence = await storage.saveImages(processedImages, storage.PRIVATE_PREFIX);
 
   let claim;
@@ -91,6 +97,9 @@ async function submit({ user, itemId, message, processedImages = [] }) {
     );
     claim = inserted.rows[0];
   } catch (err) {
+    // F18: the images were already written to the private bucket; remove them so
+    // a refused claim does not leave files nothing references.
+    await Promise.all(evidence.map((e) => storage.deleteImage(e.key).catch(() => {})));
     if (err.code === '23505') {
       throw conflict('You already have an active claim on this item');
     }
@@ -190,6 +199,10 @@ async function decide({ claimId, actor, decision, note = null, ip = null }) {
     if (claim.owner_id !== actor.id && actor.role !== 'admin') {
       throw forbidden('Only the listing owner can review this claim');
     }
+    // F3: an administrator reviewing a claim they filed themselves is self-dealing.
+    if (claim.claimant_id === actor.id) {
+      throw forbidden('You cannot decide a claim you submitted yourself');
+    }
     if (claim.status !== 'pending') {
       throw conflict(`This claim was already ${claim.status.replace('_', ' ')}`);
     }
@@ -197,7 +210,9 @@ async function decide({ claimId, actor, decision, note = null, ip = null }) {
     if (decision === 'approved') {
       // Conditional update: only the request that finds the item "open" wins.
       const moved = await client.query(
-        `update items set status = 'claimed' where id = $1 and status = 'open' returning id`,
+        `update items set status = 'claimed'
+          where id = $1 and status = 'open' and moderation_status = 'approved'
+          returning id`,
         [claim.item_id]
       );
       if (!moved.rowCount) throw conflict('This item is no longer open for claims');
@@ -316,7 +331,8 @@ async function proposeHandover({ claimId, user, place, at }) {
 async function complete({ claimId, user, ip = null }) {
   const result = await withTransaction(async (client) => {
     const { rows } = await client.query(
-      `select c.id, c.status, c.claimant_id, i.id as item_id, i.owner_id, i.title
+      `select c.id, c.status, c.claimant_id, i.id as item_id, i.owner_id, i.title,
+              i.status as item_status
          from claims c join items i on i.id = c.item_id
         where c.id = $1
         for update of c, i`,
@@ -328,6 +344,11 @@ async function complete({ claimId, user, ip = null }) {
     if (!isParty && user.role !== 'admin') throw forbidden();
     if (claim.status !== 'approved') {
       throw conflict('Only an approved claim can be completed');
+    }
+    // The listing was removed after the approval: completing it would leave the
+    // claim "completed" while the item reads "removed".
+    if (claim.item_status === 'removed') {
+      throw conflict('This listing was removed, so the claim can no longer be completed');
     }
 
     await client.query(

@@ -247,8 +247,9 @@
   // If the visitor already has a session, offer the dashboard instead.
   if (session.token) {
     api('/api/auth/me', { allowUnauthorized: true })
-      .then(() => {
-        location.href = safeNext('dashboard.html');
+      .then((res) => {
+        const home = res.user && res.user.role === 'admin' ? 'admin/' : 'dashboard.html';
+        location.href = safeNext(home);
       })
       .catch(() => session.clear());
   }
