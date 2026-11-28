@@ -17,6 +17,18 @@ A free project is enough for a campus pilot (500 MB database, 1 GB storage).
 
 ## 2. Create the schema
 
+### The one-paste version (recommended)
+
+Open **SQL Editor → New query**, paste all of
+[`db/supabase/one-shot-setup.sql`](../db/supabase/one-shot-setup.sql) and run it.
+That single file creates the 8 tables, every constraint and index, both storage
+buckets, and finishes with verification queries. It is idempotent, and it is
+generated from `db/migrations/*.sql` plus `storage_setup.sql`, so it cannot drift
+from what `npm run migrate` applies.
+
+The sections below describe the same work step by step, which is useful the first
+time you want to understand what is being created.
+
 ### Option A — migration runner (recommended)
 
 ```bash

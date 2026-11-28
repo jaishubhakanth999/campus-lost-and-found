@@ -30,6 +30,13 @@ service, so you do not have to remember any setting.
 which nothing here has been tested against (native modules: sharp, pg). Both
 Node 20 and 22 are exercised by CI on every push; 22 is the recommended target.
 
+### Environment variables
+
+`render.env.example` in the repository root is a paste-ready block for Render's
+**Environment → Add from .env**. Every variable is annotated with where its value
+comes from; 41 in total, of which only ten need your input and two are secrets
+Render can generate.
+
 ### One-time deploy
 
 1. Render dashboard → **New → Blueprint** → connect this repository → **Apply**.
