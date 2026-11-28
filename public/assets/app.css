@@ -348,3 +348,22 @@ body.admin { background: #f4f6f2; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+
+/* password strength meter -------------------------------------------------- */
+.pw-meter { margin-top: 8px; }
+.pw-meter-track { height: 6px; border-radius: 99px; background: #e8ece6; overflow: hidden; }
+.pw-meter-fill { display: block; height: 100%; width: 20%; border-radius: 99px;
+                 background: #b4453c; transition: width .18s ease, background .18s ease; }
+.pw-meter[data-score="0"] .pw-meter-fill { width: 20%; background: #b4453c; }
+.pw-meter[data-score="1"] .pw-meter-fill { width: 40%; background: #c9772b; }
+.pw-meter[data-score="2"] .pw-meter-fill { width: 60%; background: #b7952f; }
+.pw-meter[data-score="3"] .pw-meter-fill { width: 80%; background: #4f8a4a; }
+.pw-meter[data-score="4"] .pw-meter-fill { width: 100%; background: var(--green); }
+.pw-meter-line { display: flex; justify-content: space-between; gap: 10px;
+                 font-size: 11.5px; margin-top: 5px; min-height: 15px; }
+.pw-meter-label { font-weight: 700; color: var(--muted); }
+.pw-meter-need { color: var(--muted); }
+.pw-meter-need.bad { color: #b4453c; font-weight: 600; }
+.pw-meter-need.good { color: var(--green-dark); font-weight: 600; }
+.pw-meter-hints { margin: 6px 0 0; padding-left: 18px; font-size: 11.5px; color: var(--muted); }
+.pw-meter-hints li { margin: 1px 0; }

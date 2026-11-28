@@ -13,6 +13,7 @@
  */
 
 const bcrypt = require('bcryptjs');
+const { meetsPolicy } = require('../src/lib/passwordStrength');
 const { buildConfig } = require('../src/config/env');
 
 let cfg;
@@ -31,8 +32,9 @@ async function main() {
   if (!authService.domainAllowed(email, 'admin')) {
     throw new Error(`ADMIN_EMAIL must be on an approved administrator domain (${authService.allowedDomainHint('admin')})`);
   }
-  if (password.length < 12 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-    throw new Error('ADMIN_PASSWORD must be at least 12 characters and contain a letter and a number');
+  const policy = meetsPolicy(password, 'admin');
+  if (!policy.ok) {
+    throw new Error(`ADMIN_PASSWORD is too weak — ${policy.label.toLowerCase()}: ${policy.hints.join('; ')}`);
   }
 
   const hash = await bcrypt.hash(password, cfg.BCRYPT_ROUNDS);

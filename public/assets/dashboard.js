@@ -277,7 +277,7 @@
       '<div class="form-alert error" id="pwAlert" hidden></div>' +
       '<form id="pwForm" style="max-width:460px;">' +
         '<div class="field"><label for="curPw">Current password</label><input id="curPw" name="currentPassword" type="password" required autocomplete="current-password"></div>' +
-        '<div class="field"><label for="newPw">New password</label><input id="newPw" name="newPassword" type="password" required minlength="8" autocomplete="new-password"><span class="hint">At least 8 characters with a letter and a number. Other devices will be signed out.</span></div>' +
+        '<div class="field"><label for="newPw">New password</label><input id="newPw" name="newPassword" type="password" required minlength="8" autocomplete="new-password"><span class="hint">Other devices will be signed out when you change it.</span></div>' +
         '<button class="btn btn-dark" type="submit" id="pwSubmit">Update password</button>' +
       '</form>';
 
@@ -312,6 +312,7 @@
     });
 
     const pwForm = document.getElementById('pwForm');
+    window.CC.attachPasswordMeter(document.getElementById('newPw'), { role: 'student' });
     pwForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       const btn = document.getElementById('pwSubmit');

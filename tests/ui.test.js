@@ -218,7 +218,7 @@ test('registration submits the form values as JSON', async () => {
   const form = window.document.getElementById('registerForm');
   form.elements.name.value = 'Asha Rao';
   form.elements.email.value = 'asha@saiuniversity.edu.in';
-  form.elements.password.value = 'Campus123';
+  form.elements.password.value = 'CampusLife#2026';
   form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
   await tick();
 
@@ -226,7 +226,7 @@ test('registration submits the form values as JSON', async () => {
   assert.ok(call, 'the register endpoint was called');
   assert.equal(call.method, 'POST');
   const body = JSON.parse(call.body);
-  assert.deepEqual(body, { name: 'Asha Rao', email: 'asha@saiuniversity.edu.in', password: 'Campus123' });
+  assert.deepEqual(body, { name: 'Asha Rao', email: 'asha@saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(window.document.getElementById('panelOtp').hidden, false, 'the OTP panel is shown');
 });
 
@@ -238,7 +238,7 @@ test('login submits credentials and switches to the OTP step', async () => {
 
   const form = window.document.getElementById('loginForm');
   form.elements.email.value = 'asha@saiuniversity.edu.in';
-  form.elements.password.value = 'Campus123';
+  form.elements.password.value = 'CampusLife#2026';
   form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
   await tick();
 
@@ -260,7 +260,7 @@ test('entering six digits submits the OTP and stores the session', async () => {
 
   const loginForm = window.document.getElementById('loginForm');
   loginForm.elements.email.value = 'asha@saiuniversity.edu.in';
-  loginForm.elements.password.value = 'Campus123';
+  loginForm.elements.password.value = 'CampusLife#2026';
   loginForm.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
   await tick();
 
@@ -522,4 +522,49 @@ test('the admin console signs an administrator in through the OTP step', async (
   assert.equal(window.document.getElementById('consoleScreen').hidden, false, 'console opened');
   assert.ok(calls.some((c) => c.url === '/api/admin/overview'), 'overview was loaded');
   assert.match(window.document.getElementById('adminPanel').textContent, /Total users/);
+});
+
+test('the password meter follows what the user types and warns when it is too weak', async () => {
+  const { window } = loadPage('auth.html');
+  await tick();
+
+  const input = window.document.getElementById('regPassword');
+  const meter = window.document.querySelector('.pw-meter');
+  assert.ok(meter, 'a meter is attached to the registration password field');
+
+  input.value = 'password123';
+  input.dispatchEvent(new window.Event('input', { bubbles: true }));
+  await tick();
+  assert.equal(meter.dataset.score, '0');
+  assert.match(meter.textContent, /Very weak/i);
+  assert.match(meter.textContent, /Too weak to use/i);
+  assert.ok(meter.querySelectorAll('.pw-meter-hints li').length > 0, 'it explains what to fix');
+
+  input.value = 'vzpzh5g3?+8s66L*b&bd';
+  input.dispatchEvent(new window.Event('input', { bubbles: true }));
+  await tick();
+  assert.equal(meter.dataset.score, '4');
+  assert.match(meter.textContent, /Very strong/i);
+  assert.match(meter.textContent, /Good to go/i);
+});
+
+test('the admin console meter uses the administrator floor', async () => {
+  const { window } = loadPage('admin/index.html', { role: 'admin' });
+  await tick();
+  window.document.querySelector('.admin-side [data-section="security"]').click();
+  await tick(400);
+
+  const input = window.document.getElementById('secNew');
+  const meter = window.document.querySelector('.pw-meter');
+  assert.ok(meter, 'the admin password field has a meter');
+
+  input.value = 'Kanth@123';   // clears the student floor, not the admin one
+  input.dispatchEvent(new window.Event('input', { bubbles: true }));
+  await tick();
+  assert.match(meter.textContent, /Too weak to use/i, 'admins are held to a higher floor');
+
+  input.value = 'vzpzh5g3?+8s66L*b&bd';
+  input.dispatchEvent(new window.Event('input', { bubbles: true }));
+  await tick();
+  assert.match(meter.textContent, /Good to go/i);
 });

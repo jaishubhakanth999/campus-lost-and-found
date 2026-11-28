@@ -17,7 +17,20 @@ const email = z
   .max(254)
   .email('Enter a valid email address')
   .transform((v) => v.toLowerCase());
-const password = z.string().min(8, 'Use at least 8 characters').max(128);
+const { meetsPolicy } = require('../lib/passwordStrength');
+
+// Length is checked by the schema; the strength floor is checked by the same
+// scoring function the meter shows the user, so the two can never disagree.
+const password = z
+  .string()
+  .min(8, 'Use at least 8 characters')
+  .max(128)
+  .superRefine((value, ctx) => {
+    const policy = meetsPolicy(value, 'student');
+    if (!policy.ok) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: policy.message });
+    }
+  });
 
 const dateOnly = z
   .string()

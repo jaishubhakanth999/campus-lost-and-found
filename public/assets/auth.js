@@ -11,6 +11,9 @@
   };
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
+
+  // Live strength feedback on the only field where the user chooses a password.
+  window.CC.attachPasswordMeter(document.getElementById('regPassword'), { role: 'student' });
   const otpForm = document.getElementById('otpForm');
   const otpAlert = document.getElementById('otpAlert');
   const otpInfo = document.getElementById('otpInfo');

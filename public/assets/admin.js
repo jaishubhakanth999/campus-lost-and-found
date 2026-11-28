@@ -510,7 +510,7 @@
             '<input id="secCurrent" name="currentPassword" type="password" required autocomplete="current-password"></div>' +
           '<div class="field"><label for="secNew">New password</label>' +
             '<input id="secNew" name="newPassword" type="password" required minlength="12" autocomplete="new-password">' +
-            '<span class="hint">At least 12 characters, including a letter and a number.</span></div>' +
+            '<span class="hint">Administrator passwords must be strong.</span></div>' +
           '<button class="btn btn-primary" type="submit" id="secSubmit">Update password</button>' +
         '</form>' +
       '</div>' +
@@ -519,6 +519,8 @@
         '<p class="muted" style="font-size:.9rem;">Sign-ins for your own account. Revoke anything you do not recognise.</p>' +
         '<div id="secSessions"><div class="skeleton" style="height:80px;"></div></div>' +
       '</div>';
+
+    window.CC.attachPasswordMeter(document.getElementById('secNew'), { role: 'admin' });
 
     const form = document.getElementById('secForm');
     form.addEventListener('submit', async (event) => {

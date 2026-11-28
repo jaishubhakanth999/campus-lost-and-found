@@ -38,7 +38,7 @@ test('health endpoint reports the database', async () => {
 test('registration accepts a university email and issues an OTP, not a token', async () => {
   const res = await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Asha Rao', email: 'asha@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Asha Rao', email: 'asha@saiuniversity.edu.in', password: 'CampusLife#2026' });
 
   assert.equal(res.status, 201);
   assert.equal(res.body.otpRequired, true);
@@ -55,14 +55,14 @@ test('registration accepts a university email and issues an OTP, not a token', a
 test('registration accepts a sub-domain of an approved university domain', async () => {
   const res = await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Dept Student', email: 'student@scds.saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Dept Student', email: 'student@scds.saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(res.status, 201);
 });
 
 test('registration rejects a non-university email domain', async () => {
   const res = await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Outsider', email: 'someone@gmail.com', password: 'Campus123' });
+    .send({ name: 'Outsider', email: 'someone@gmail.com', password: 'CampusLife#2026' });
   assert.equal(res.status, 403);
   assert.match(res.body.error.message, /university email/i);
   assert.equal(lastMail('someone@gmail.com'), undefined);
@@ -71,7 +71,7 @@ test('registration rejects a non-university email domain', async () => {
 test('registration rejects a malformed email address', async () => {
   const res = await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Bad Email', email: 'not-an-email', password: 'Campus123' });
+    .send({ name: 'Bad Email', email: 'not-an-email', password: 'CampusLife#2026' });
   assert.equal(res.status, 400);
   assert.equal(res.body.error.code, 'validation_failed');
   assert.ok(res.body.error.fields.email);
@@ -89,7 +89,7 @@ test('a verified email cannot register twice', async () => {
   await registerAndVerify(app, { email: 'dup@saiuniversity.edu.in' });
   const res = await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Dup', email: 'dup@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Dup', email: 'dup@saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(res.status, 409);
 });
 
@@ -97,14 +97,14 @@ test('email uniqueness is case-insensitive', async () => {
   await registerAndVerify(app, { email: 'case@saiuniversity.edu.in' });
   const res = await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Case', email: 'CASE@SaiUniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Case', email: 'CASE@SaiUniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(res.status, 409);
 });
 
 test('the correct OTP activates the account and returns a session', async () => {
   const reg = await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Ravi Kumar', email: 'ravi@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Ravi Kumar', email: 'ravi@saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(reg.status, 201);
 
   const code = extractOtp('ravi@saiuniversity.edu.in');
@@ -135,7 +135,7 @@ test('the correct OTP activates the account and returns a session', async () => 
 test('an incorrect OTP is rejected and the attempt is counted', async () => {
   await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Wrong OTP', email: 'wrongotp@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Wrong OTP', email: 'wrongotp@saiuniversity.edu.in', password: 'CampusLife#2026' });
 
   const res = await request(app)
     .post('/api/auth/verify-otp')
@@ -155,7 +155,7 @@ test('an incorrect OTP is rejected and the attempt is counted', async () => {
 test('an OTP cannot be reused after a successful verification', async () => {
   const reg = await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Reuse', email: 'reuse@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Reuse', email: 'reuse@saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(reg.status, 201);
   const code = extractOtp('reuse@saiuniversity.edu.in');
 
@@ -174,7 +174,7 @@ test('an OTP cannot be reused after a successful verification', async () => {
 test('an expired OTP is rejected', async () => {
   await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Expired', email: 'expired@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Expired', email: 'expired@saiuniversity.edu.in', password: 'CampusLife#2026' });
   const code = extractOtp('expired@saiuniversity.edu.in');
 
   await query(
@@ -193,7 +193,7 @@ test('an expired OTP is rejected', async () => {
 test('five wrong attempts lock the code', async () => {
   await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Brute', email: 'brute@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Brute', email: 'brute@saiuniversity.edu.in', password: 'CampusLife#2026' });
   const realCode = extractOtp('brute@saiuniversity.edu.in');
   const wrong = realCode === '111111' ? '222222' : '111111';
 
@@ -215,7 +215,7 @@ test('five wrong attempts lock the code', async () => {
 test('resending supersedes the previous code', async () => {
   await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Resend', email: 'resend@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Resend', email: 'resend@saiuniversity.edu.in', password: 'CampusLife#2026' });
   const first = extractOtp('resend@saiuniversity.edu.in');
 
   const resend = await request(app)
@@ -240,7 +240,7 @@ test('resending supersedes the previous code', async () => {
 test('the hourly OTP cap blocks code flooding', async () => {
   await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Flood', email: 'flood@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Flood', email: 'flood@saiuniversity.edu.in', password: 'CampusLife#2026' });
 
   let blocked = false;
   for (let i = 0; i < 8; i += 1) {
@@ -266,11 +266,11 @@ test('resending to an unknown address does not reveal that it is unknown', async
 test('an unverified account cannot log in, but is offered verification instead', async () => {
   await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Unverified', email: 'unverified@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Unverified', email: 'unverified@saiuniversity.edu.in', password: 'CampusLife#2026' });
 
   const res = await request(app)
     .post('/api/auth/login')
-    .send({ email: 'unverified@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ email: 'unverified@saiuniversity.edu.in', password: 'CampusLife#2026' });
 
   assert.equal(res.status, 200);
   assert.equal(res.body.token, undefined);
@@ -283,7 +283,7 @@ test('login with valid credentials issues an OTP challenge, never a token', asyn
 
   const res = await request(app)
     .post('/api/auth/login')
-    .send({ email: 'login@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ email: 'login@saiuniversity.edu.in', password: 'CampusLife#2026' });
 
   assert.equal(res.status, 200);
   assert.equal(res.body.token, undefined);
@@ -333,7 +333,7 @@ test('a student cannot use the administrator portal', async () => {
   await registerAndVerify(app, { email: 'notadmin@saiuniversity.edu.in' });
   const res = await request(app)
     .post('/api/auth/admin/login')
-    .send({ email: 'notadmin@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ email: 'notadmin@saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(res.status, 403);
 });
 
@@ -386,7 +386,7 @@ test('changing the password revokes other sessions', async () => {
   const res = await request(app)
     .post('/api/auth/change-password')
     .set('Authorization', `Bearer ${second.token}`)
-    .send({ currentPassword: 'Campus123', newPassword: 'NewCampus123' });
+    .send({ currentPassword: 'CampusLife#2026', newPassword: 'NewCampusLife#2026' });
   assert.equal(res.status, 200);
   assert.ok(res.body.otherSessionsRevoked >= 1);
 
@@ -401,7 +401,7 @@ test('a suspended account cannot sign in', async () => {
   ]);
   const res = await request(app)
     .post('/api/auth/login')
-    .send({ email: 'suspended@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ email: 'suspended@saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(res.status, 403);
 });
 

@@ -61,7 +61,7 @@ test('F1: private claim evidence is not reachable through the public /uploads pa
 test('F2: parallel verifications of one code yield exactly one session', async () => {
   await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Race', email: 'race@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Race', email: 'race@saiuniversity.edu.in', password: 'CampusLife#2026' });
   const code = extractOtp('race@saiuniversity.edu.in');
 
   const attempts = await Promise.all(
@@ -85,7 +85,7 @@ test('F2: parallel verifications of one code yield exactly one session', async (
 test('F2: parallel wrong guesses are all counted', async () => {
   await request(app)
     .post('/api/auth/register')
-    .send({ name: 'Race2', email: 'race2@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ name: 'Race2', email: 'race2@saiuniversity.edu.in', password: 'CampusLife#2026' });
   const real = extractOtp('race2@saiuniversity.edu.in');
   const wrong = real === '111111' ? '222222' : '111111';
 
@@ -130,7 +130,7 @@ test('F3: after a real login the code can be resent', async () => {
   await registerAndVerify(app, { email: 'resendok@saiuniversity.edu.in' });
   const login = await request(app)
     .post('/api/auth/login')
-    .send({ email: 'resendok@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ email: 'resendok@saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(login.status, 200);
 
   const res = await request(app)

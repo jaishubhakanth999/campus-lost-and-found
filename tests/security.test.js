@@ -104,7 +104,7 @@ test('an XSS payload in a listing is stored but the API returns it as data', asy
 });
 
 test('oversized JSON bodies are rejected', async () => {
-  const big = { name: 'x'.repeat(2 * 1024 * 1024), email: 'big@saiuniversity.edu.in', password: 'Campus123' };
+  const big = { name: 'x'.repeat(2 * 1024 * 1024), email: 'big@saiuniversity.edu.in', password: 'CampusLife#2026' };
   const res = await request(app).post('/api/auth/register').send(big);
   assert.equal(res.status, 413);
 });

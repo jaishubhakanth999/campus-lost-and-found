@@ -20,7 +20,7 @@ function lastMail(email) {
   return mailer.lastCapturedTo(email);
 }
 
-async function registerAndVerify(app, { name = 'Test Student', email, password = 'Campus123' }) {
+async function registerAndVerify(app, { name = 'Test Student', email, password = 'CampusLife#2026' }) {
   const reg = await request(app).post('/api/auth/register').send({ name, email, password });
   assert.strictEqual(reg.status, 201, `register failed: ${JSON.stringify(reg.body)}`);
   const code = extractOtp(email);
@@ -31,7 +31,7 @@ async function registerAndVerify(app, { name = 'Test Student', email, password =
   return { token: verify.body.token, user: verify.body.user, password, code };
 }
 
-async function loginAndVerify(app, { email, password = 'Campus123', portal = 'student' }) {
+async function loginAndVerify(app, { email, password = 'CampusLife#2026', portal = 'student' }) {
   const path = portal === 'admin' ? '/api/auth/admin/login' : '/api/auth/login';
   const login = await request(app).post(path).send({ email, password, portal });
   assert.strictEqual(login.status, 200, `login failed: ${JSON.stringify(login.body)}`);

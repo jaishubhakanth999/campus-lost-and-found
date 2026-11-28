@@ -126,7 +126,7 @@ test('suspending a user revokes their sessions immediately', async () => {
 
   const login = await request(app)
     .post('/api/auth/login')
-    .send({ email: 'victim@saiuniversity.edu.in', password: 'Campus123' });
+    .send({ email: 'victim@saiuniversity.edu.in', password: 'CampusLife#2026' });
   assert.equal(login.status, 403);
 });
 

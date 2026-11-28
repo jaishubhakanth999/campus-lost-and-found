@@ -13,6 +13,7 @@
 
 const readline = require('node:readline');
 const bcrypt = require('bcryptjs');
+const { meetsPolicy } = require('../src/lib/passwordStrength');
 
 const ROUNDS = 12; // keep in step with BCRYPT_ROUNDS in production
 
@@ -41,8 +42,9 @@ function ask(question, { hidden = false } = {}) {
 (async () => {
   const password = await ask('Password (at least 12 characters, letters and a number): ', { hidden: true });
 
-  if (password.length < 12 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
-    console.error('Rejected: use at least 12 characters and include a letter and a number.');
+  const policy = meetsPolicy(password, 'admin');
+  if (!policy.ok) {
+    console.error(`Rejected — ${policy.label.toLowerCase()}. ${policy.hints.join('; ')}.`);
     process.exit(1);
   }
 

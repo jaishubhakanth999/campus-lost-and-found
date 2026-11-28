@@ -54,6 +54,27 @@ Written to be read by whoever runs this platform, not just by developers.
 | Session impact | Every session for the account is revoked on a successful reset |
 | Audit | `password_reset_requested` and `password_reset_completed` land in `auth_events` |
 
+## 2c. Password policy
+
+**Enforced on the server, previewed in the browser by the same scoring function**
+(`src/lib/passwordStrength.js`, mirrored in `public/assets/api.js`;
+`tests/password.test.js` fails if the two ever disagree).
+
+| | Students | Administrators |
+|---|---|---|
+| Minimum length | 8 | 12 |
+| Minimum score | 2 (fair) | 3 (strong) |
+| Always refused | common words (`password`, `qwerty`, `campus`…), digits only, three identical characters in a row, keyboard or alphabet runs | same |
+
+The score is 0–4: length first, then character variety, minus penalties for the
+patterns above. Deliberately not zxcvbn — no dependency, no 800 KB dictionary,
+and the rules fit in one sentence. Accepted passwords are then hashed with
+bcrypt cost 12.
+
+A meter appears on every screen where a password is chosen (registration, reset,
+student profile, admin console). It says *“Too weak to use”* and lists the two or
+three things that would fix it, so a rejection is never a surprise from the API.
+
 ## 3. Sessions
 
 - A JWT carries `sub` (user), `sid` (session) and `role`, signed HS256 with an
