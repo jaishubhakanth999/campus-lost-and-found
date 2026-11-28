@@ -71,6 +71,9 @@ async function supabasePut(key, buffer, mime, bucket) {
   const res = await fetch(`${url}/storage/v1/object/${bucket}/${key}`, {
     method: 'POST',
     headers: {
+      // `apikey` is what the new sb_secret_… keys are read from; the Bearer
+      // header keeps legacy service_role JWTs working. Send both.
+      apikey: serviceKey,
       Authorization: `Bearer ${serviceKey}`,
       'Content-Type': mime,
       'x-upsert': 'false',
@@ -137,7 +140,7 @@ async function deleteImage(key) {
     const bucket = key.startsWith(PRIVATE_PREFIX) ? supabaseConfig().privateBucket : supabaseConfig().bucket;
     await fetch(`${url}/storage/v1/object/${bucket}/${key}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${serviceKey}` },
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
     }).catch(() => {});
     return;
   }
@@ -152,6 +155,7 @@ async function signedUrl(key, expiresIn = 300) {
     const res = await fetch(`${url}/storage/v1/object/sign/${privateBucket}/${key}`, {
       method: 'POST',
       headers: {
+        apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
         'Content-Type': 'application/json',
       },
