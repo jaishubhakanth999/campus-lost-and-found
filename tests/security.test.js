@@ -109,6 +109,19 @@ test('oversized JSON bodies are rejected', async () => {
   assert.equal(res.status, 413);
 });
 
+test('every table in the public schema has row level security enabled', async () => {
+  const { query } = require('../src/db/pool');
+  const { rows } = await query(
+    `select c.relname
+       from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity
+      order by 1`
+  );
+  // A table added after the first migration must enable RLS itself; without it
+  // the anon key can read the rows through PostgREST.
+  assert.deepEqual(rows.map((r) => r.relname), [], 'tables without RLS: ' + rows.map((r) => r.relname).join(', '));
+});
+
 test('the schema refuses a password hash that is not a bcrypt digest', async () => {
   const { query } = require('../src/db/pool');
   await assert.rejects(

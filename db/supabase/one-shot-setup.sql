@@ -341,7 +341,64 @@ alter table users
   check (password_hash ~ '^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$');
 
 -- ###########################################################################
--- SECTION 4 — storage buckets
+-- SECTION 4 — RLS on every table
+-- ###########################################################################
+
+-- =============================================================================
+-- Migration 004 — RLS on every public table
+--
+-- 001 enabled RLS on the seven tables that existed then; 002 added
+-- password_reset_tokens afterwards and it shipped without RLS, which the
+-- Supabase advisor flagged as critical (the anon key could read reset tokens).
+--
+-- Rather than patch that one table, this enables RLS on any public table that is
+-- missing it, so a future migration cannot reintroduce the gap.
+--
+-- RLS with no policies = deny-all for anon/authenticated. That is deliberate:
+-- only the API (direct connection / service role) reads these tables.
+-- =============================================================================
+
+do $$
+declare t record;
+begin
+  for t in
+    select c.relname
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public'
+       and c.relkind = 'r'
+       and not c.relrowsecurity
+  loop
+    execute format('alter table public.%I enable row level security', t.relname);
+    raise notice 'RLS enabled on public.%', t.relname;
+  end loop;
+end $$;
+
+-- ###########################################################################
+-- SECTION 5 — pinned search_path
+-- ###########################################################################
+
+-- =============================================================================
+-- Migration 005 — pin the search_path on set_updated_at()
+--
+-- Supabase's advisor flags a mutable search_path as a warning: a caller can
+-- shadow the objects a function resolves, which is how trigger helpers get
+-- hijacked. Pinning it to pg_catalog, public closes that.
+-- =============================================================================
+
+create or replace function public.set_updated_at() returns trigger
+language plpgsql
+security invoker
+set search_path = pg_catalog, public
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+-- ###########################################################################
+-- SECTION 6 — storage buckets
 -- ###########################################################################
 
 -- =============================================================================
@@ -413,9 +470,8 @@ select id, public, file_size_limit, allowed_mime_types
 --
 -- * Storage is a paid feature above the free-tier allowance. Check the current
 --   limits in your Supabase dashboard before a campus-wide launch.
-
 -- ###########################################################################
--- SECTION 5 — verify (read-only; safe to re-run)
+-- SECTION 7 — verify (read-only; safe to re-run)
 -- ###########################################################################
 
 -- Expect 8 rows.
